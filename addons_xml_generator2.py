@@ -116,13 +116,13 @@ class Generator:
             print("An error occurred saving %s file!\n%s" % (file, e))
  
  
-def zipfolder(foldername, target_dir, zips_dir):
+def zipfolder(foldername, target_dir, zips_dir, addon_dir):
     zipobj = zipfile.ZipFile(zips_dir + foldername, 'w', zipfile.ZIP_DEFLATED)
     rootlen = len(target_dir) + 1
     for base, dirs, files in os.walk(target_dir):
         for f in files:
             fn = os.path.join(base, f)
-            zipobj.write(fn, os.path.join(foldername[:-4], fn[rootlen:]))
+            zipobj.write(fn, os.path.join(addon_dir, fn[rootlen:]))
     zipobj.close()
 
 
@@ -166,19 +166,17 @@ if (__name__ == "__main__"):
                 # #check for and zip the folders
                 print('Zipping %s and moving to %s\n' % (x, zipsfolder))
                 try:
-                    zipfolder(zipfilenamefirstpart + version + zipfilenamelastpart, foldertozip, zipsfolder)
+                    zipfolder(zipfilenamefirstpart + version + zipfilenamelastpart, foldertozip, zipsfolder, x)
                     print('zipped with zipfolder\n')
                 except:
                     if os.path.exists(zipsfolder + x + version + '.zip'):
                         os.remove(zipsfolder + x + version + '.zip')
                         print('trying shutil')
                     try:
-                        shutil.move(shutil.make_archive(foldertozip + version, 'zip', foldertozip), zipsfolder)
+                        shutil.move(shutil.make_archive(foldertozip + version, 'zip', rootdir, x), zipsfolder)
                         print('zipped with shutil\n')
                     except Exception as e:
                         print('Cannot create zip file\nshutil %s\n' % e)
     except Exception as e:
         print('Cannot create or move the needed files\n%s' % e)
     print('Done')
-    i = True
-    while i : raw_input('Press enter key to exit '); i = False
