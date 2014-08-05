@@ -33,7 +33,7 @@ Addons Included
 </addon>
 
 <!--suppress ALL -->
-<addon id="plugin.video.1channel" version="2.4.2" name="1Channel" provider-name="Bstrdsmkr">
+<addon id="plugin.video.1channel" version="2.4.50" name="1Channel" provider-name="Bstrdsmkr">
     <requires>
         <import addon="xbmc.python" version="2.1.0"/>
         <import addon="script.module.urlresolver" version="2.2.0"/>
@@ -48,8 +48,8 @@ Addons Included
     </extension>
     <extension point="xbmc.addon.metadata">
         <summary>Browse 1channel.ch</summary>
-        <description>This addon is supported at [COLOR blue]www.XBMCHub.com[/COLOR], [COLOR white][B]NOT[/B][/COLOR]
-            [COLOR red]xbmc.org[/COLOR]. Play a wide selection of movies and TV shows from 1channel.ch
+        <description>Play a wide selection of movies and TV shows from PrimeWire.ag.
+***This addon is supported at [COLOR blue]www.XBMCHub.com[/COLOR], [COLOR white][B]NOT[/B][/COLOR] [COLOR red]xbmc.org[/COLOR]. ***
         </description>
         <platform>all</platform>
     </extension>

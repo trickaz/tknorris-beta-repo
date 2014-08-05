@@ -3,16 +3,88 @@ import re
 import sys
 import time
 import datetime
+import json
+import _strptime # fix bug in python import
 import xbmc
 import xbmcgui
 import xbmcplugin
 from addon.common.addon import Addon
 from db_utils import DB_Connection
+from pw_scraper import PW_Scraper
 # from functools import wraps
 
 db_connection = DB_Connection()
 
+DAY_NUMS = list('0123456')
+DAY_CODES = ['M', 'T', 'W', 'H', 'F', 'Sa', 'Su']
+
 _1CH = Addon('plugin.video.1channel')
+pw_scraper = PW_Scraper(_1CH.get_setting("username"),_1CH.get_setting("passwd"))
+
+def enum(**enums):
+    return type('Enum', (), enums)
+
+MODES = enum(SAVE_FAV='SaveFav', DEL_FAV='DeleteFav', GET_SOURCES='GetSources', PLAY_SOURCE='PlaySource', CH_WATCH='ChangeWatched', PLAY_TRAILER='PlayTrailer',
+                   SEARCH_QUERY='GetSearchQuery', DESC_QUERY='GetSearchQueryDesc', ADV_QUERY='GetSearchQueryAdvanced', SEARCH='Search', SEARCH_DESC='SearchDesc',
+                   SEARCH_ADV='SearchAdvanced', REMOTE_SEARCH='7000', MAIN='main', LIST_MENU='BrowseListMenu', AZ_MENU='BrowseAlphabetMenu', GENRE_MENU='BrowseByGenreMenu', 
+                   FILTER_RESULTS='GetFilteredResults', SEASON_LIST='TVShowSeasonList', EPISODE_LIST='TVShowEpisodeList', BROWSE_FAVS='browse_favorites', 
+                   BROWSE_FAVS_WEB='browse_favorites_website', MIG_FAVS='migrateFavs', FAV2LIB='fav2Library', BROWSE_W_WEB='browse_watched_website', ADD2LIB='add_to_library',
+                   ADD_SUB='add_subscription', CANCEL_SUB='cancel_subscription', MAN_UPD_SUBS='manual_update_subscriptions', UPD_SUBS='update_subscriptions',
+                   MAN_CLEAN_SUBS='manual_clean_up_subscriptions', CLEAN_SUBS='clean_up_subscriptions', MANAGE_SUBS='manage_subscriptions', PAGE_SELECT='PageSelect',
+                   FAV_PAGE_SELECT='FavPageSelect', WATCH_PAGE_SELECT='WatchedPageSelect', SEARCH_PAGE_SELECT='SearchPageSelect', EXPORT_DB='export_db', IMPORT_DB='import_db',
+                   BACKUP_DB='backup_db', EDIT_DAYS='edit_days', HELP='Help', FLUSH_CACHE='flush_cache', INSTALL_META='install_metapack', INSTALL_LOCAL_META='install_local_metapack',
+                   MOVIE_UPDATE='movie_update', SELECT_SOURCES='SelectSources', REFRESH_META='refresh_meta', META_SETTINGS='9988', RES_SETTINGS='ResolverSettings',
+                   TOGGLE_X_FAVS='toggle_xbmc_fav', PLAYLISTS_MENU='playlists_menu', BROWSE_PLAYLISTS='get_playlists', SHOW_PLAYLIST='show_playlist', PL_PAGE_SELECT='PLPageSelect',
+                   RM_FROM_PL='remove_from_playlist', ADD2PL='add_to_playlist', BROWSE_TW_WEB='browse_towatch_website', CH_TOWATCH_WEB='change_towatch_website',
+                   CH_WATCH_WEB='change_watched_website', MAN_UPD_TOWATCH='man_update_towatch', RESET_DB='reset_db')
+
+SUB_TYPES  = enum(PW_PL=0)
+
+hours_list={}
+hours_list[MODES.UPD_SUBS] = [2, 2] + range(2, 25) # avoid accidental runaway subscription updates
+hours_list[MODES.MOVIE_UPDATE] = [2, 5, 10, 15, 24]
+hours_list[MODES.BACKUP_DB] = [12, 24, 168, 720]
+
+
+def get_days_string_from_days(days):
+    if days is None:
+        days=''
+
+    days_string=''
+    fdow=int(_1CH.get_setting('first-dow'))
+    adj_day_nums=DAY_NUMS[fdow:]+DAY_NUMS[:fdow]
+    adj_day_codes=DAY_CODES[fdow:]+DAY_CODES[:fdow]
+    all_days = ''.join(adj_day_codes)
+    for i, day_num in enumerate(adj_day_nums):
+        if day_num in days:
+            days_string += adj_day_codes[i]
+        
+    if days_string==all_days:
+        days_string='ALL'
+        
+    return days_string
+
+def get_days_from_days_string(days_string):
+    if days_string is None:
+        days_string=''
+        
+    days_string=days_string.upper()
+    days=''
+    if days_string=='ALL':
+        days='0123456'
+    else:
+        for i, day in enumerate(DAY_CODES):
+            if day.upper() in days_string:
+                days += DAY_NUMS[i]
+                
+    return days
+
+def get_default_days():
+    def_days= ['0123456', '', '0246']
+    dow=datetime.datetime.now().weekday()
+    def_days.append(str(dow))
+    def_days.append(str(dow)+str((dow+1)%7))
+    return def_days[int(_1CH.get_setting('sub-days'))]        
 
 def format_label_tvshow(info):
     if 'premiered' in info:
@@ -190,15 +262,57 @@ def website_is_integrated():
     passwd = _1CH.get_setting('passwd') is not None
     return enabled and user and passwd
 
-#TODO: Add methods to db_utils to do this for you
-def migrate_to_mysql():
-    dlg = xbmcgui.Dialog()
-    ln1 = 'Do you want to permanantly delete'
-    ln2 = 'the old database?'
-    ln3 = 'THIS CANNOT BE UNDONE'
-    yes = 'Keep'
-    no = 'Delete'
-    ret = dlg.yesno('Migration Complete', ln1, ln2, ln3, yes, no)
+def using_pl_subs():
+    return (website_is_integrated() and _1CH.get_setting('playlist-sub'))
+
+def get_subs_pl_url():
+    return '/playlists.php?id=%s' % (_1CH.get_setting('playlist-sub'))
+
+def get_subscriptions(day=None, order_matters=False):
+    if using_pl_subs():
+        def_days=get_default_days()
+        items=pw_scraper.show_playlist(get_subs_pl_url(), False)
+        ext_subs = db_connection.get_external_subs(SUB_TYPES.PW_PL)
+        subs=[]
+        for item in items:
+            if item['video_type']=='tvshow':
+                for i, sub in enumerate(ext_subs):
+                    if item['url']==sub[1]:
+                        item['days']=sub[3]
+                        del ext_subs[i]
+                        break
+                else:
+                    # add the item to ext_subs with default days
+                    db_connection.add_ext_sub(SUB_TYPES.PW_PL, item['url'], '', def_days)
+                    item['days']=def_days
+
+                # only add this item to the list if we are pulling all days or a day that this item runs on
+                if day is None or str(day) in item['days']:
+                    subs.append((item['url'], item['title'], item['img'], item['year'], '', item['days']))
+                
+                if order_matters:
+                    subs.sort(cmp=days_cmp, key=lambda k:k[5].ljust(7)+k[1])
+    else:
+        subs=db_connection.get_subscriptions(day, order_matters)
+    return subs
+
+# "all days" goes to the top, "no days" goes to the bottom, everything else is sorted lexicographically
+def days_cmp(x,y):
+    xdays, xtitle=x[:7], x[7:]
+    ydays, ytitle=y[:7], y[7:]
+    #print 'xdays,xtitle,ydays,ytitle: |%s|%s|%s|%s|' % (xdays,xtitle,ydays,ytitle)
+    if xdays==ydays:
+        return cmp(xtitle,ytitle)
+    elif xdays =='0123456':
+        return -1
+    elif ydays =='0123456':
+        return 1
+    elif xdays==' '*7:
+        return 1
+    elif ydays==' '*7:
+        return -1
+    else:
+        return cmp(x,y)
 
 def rank_host(source):
     host = source['host']
@@ -303,23 +417,10 @@ def format_eta(seconds):
     else:
         return "ETA: %02d:%02d " % (minutes, seconds)
 
-        
-        # import cProfile
-
-        # def profiled(func):
-        # def wrapper(*args, **kwargs):
-        # datafn = func.__name__ + ".profile" # Name the data file sensibly
-        # datapath = os.path.join(addon.get_profile(), datafn)
-        # prof = cProfile.Profile()
-        # retval = prof.runcall(func, *args, **kwargs)
-        # prof.dump_stats(datapath)
-        # return retval
-        # return wrapper
-
 # returns true if user chooses to resume, else false
 def get_resume_choice(url):
     question = 'Resume from %s' % (format_time(db_connection.get_bookmark(url)))
-    return xbmcgui.Dialog().yesno('Resume?', question, '', '', 'Start from beginning', 'Resume')
+    return xbmcgui.Dialog().yesno('Resume?', question, '', '', 'Start from beginning', 'Resume')==1
 
 # simple wrapper to avoid instantiating a db_connection in pw_scraper
 def get_cached_url(url, cache_limit):
@@ -329,6 +430,22 @@ def get_cached_url(url, cache_limit):
 def cache_url(url, body):
     return db_connection.cache_url(url,body)
     
+def get_fav_urls(fav_type=None):
+    if website_is_integrated():
+        if fav_type is None:
+            favs=pw_scraper.get_favorites('movies')
+            fav_urls=[fav['url'] for fav in favs]
+            favs=pw_scraper.get_favorites('tv')
+            fav_urls += [fav['url'] for fav in favs]
+        else:
+            favs=pw_scraper.get_favorites(fav_type)
+            fav_urls=[fav['url'] for fav in favs]
+    else:
+        favs=db_connection.get_favorites(fav_type)
+        fav_urls=[fav[2] for fav in favs]
+    return fav_urls
+    
+
 def format_time(seconds):
     minutes, seconds = divmod(seconds, 60)
     if minutes > 60:
@@ -337,6 +454,90 @@ def format_time(seconds):
     else:
         return "%02d:%02d" % (minutes, seconds)
 
+def filename_filter_out_year(name=''):
+    try:
+        years=re.compile(' \((\d+)\)').findall('__'+name+'__')
+        for year in years: name=name.replace(' ('+year+')','')
+        name=name.replace('[B]','').replace('[/B]','').replace('[/COLOR]','').replace('[COLOR green]','')
+        name=name.strip()
+        return name
+    except: name.strip(); return name
+
+def unpack_query(query):
+    expected_keys = ('title','tag','country','genre','actor','director','year','month','decade')
+    criteria=json.loads(query)
+    for key in expected_keys:
+        if key not in criteria: criteria[key]= ''
+
+    return criteria
+
+def get_xbmc_fav_urls():
+    xbmc_favs=get_xbmc_favs()
+    fav_urls=[]
+    for fav in xbmc_favs:
+        if 'path' in fav:
+            fav_url=fav['path']
+        elif 'windowparameter' in fav:
+            fav_url=fav['windowparameter']
+
+        fav_urls.append(fav_url)
+    return fav_urls
+
+def in_xbmc_favs(url, fav_urls, ignore_dialog=True):
+    if ignore_dialog:
+        fav_urls = (fav_url.replace('&dialog=True','').replace('&dialog=False','') for fav_url in fav_urls)
+    
+    if url in fav_urls:
+        return True
+    else:
+        return False
+    
+def get_xbmc_favs():
+    favs=[]
+    cmd = '{"jsonrpc": "2.0", "method": "Favourites.GetFavourites", "params": {"type": null, "properties": ["path", "windowparameter"]}, "id": 1}'
+    result = xbmc.executeJSONRPC(cmd)
+    result=json.loads(result)
+    if 'error' not in result:
+        for fav in result['result']['favourites']:
+            favs.append(fav)
+    else:
+        _1CH.log('Failed to get XBMC Favourites: %s' % (result['error']['message']))
+    return favs
+
+# Run a task on startup. Settings and mode values must match task name
+def do_startup_task(task):
+    run_on_startup=_1CH.get_setting('auto-%s' % task)=='true' and _1CH.get_setting('%s-during-startup' % task) == 'true' 
+    if run_on_startup and not xbmc.abortRequested:
+        _1CH.log('Service: Running startup task [%s]' % (task))
+        now = datetime.datetime.now()
+        xbmc.executebuiltin('RunPlugin(plugin://plugin.video.1channel/?mode=%s)' % (task))
+        _1CH.set_setting('%s-last_run' % (task), now.strftime("%Y-%m-%d %H:%M:%S.%f"))
+    
+# Run a recurring scheduled task. Settings and mode values must match task name
+def do_scheduled_task(task, isPlaying):
+    now = datetime.datetime.now()
+    if _1CH.get_setting('auto-%s' % task) == 'true':
+        next_run=get_next_run(task)
+        #_1CH.log("Update Status on [%s]: Currently: %s Will Run: %s" % (task, now, next_run))
+        if now >= next_run:
+            is_scanning = xbmc.getCondVisibility('Library.IsScanningVideo')
+            if not is_scanning:
+                during_playback = _1CH.get_setting('%s-during-playback' % (task))=='true'
+                if during_playback or not isPlaying:
+                    _1CH.log('Service: Running Scheduled Task: [%s]' % (task))
+                    builtin = 'RunPlugin(plugin://plugin.video.1channel/?mode=%s)' % (task)
+                    xbmc.executebuiltin(builtin)
+                    _1CH.set_setting('%s-last_run' % task, now.strftime("%Y-%m-%d %H:%M:%S.%f"))
+                else:
+                    _1CH.log('Service: Playing... Busy... Postponing [%s]' % (task))
+            else:
+                _1CH.log('Service: Scanning... Busy... Postponing [%s]' % (task))
+
+def get_next_run(task):
+    last_run=datetime.datetime.strptime(_1CH.get_setting(task+'-last_run'), "%Y-%m-%d %H:%M:%S.%f") 
+    interval=datetime.timedelta(hours=hours_list[MODES.UPD_SUBS][int(_1CH.get_setting(task+'-interval'))])
+    return (last_run+interval)
+    
 def get_adv_search_query(section):
     if section=='tv':
         header_text='Advanced TV Show Search'
@@ -350,15 +551,12 @@ def get_adv_search_query(section):
     CENTER_Y=6
     CENTER_X=2
     now = datetime.datetime.now()
+    # allowed values have to be list of strings
     allowed_values={}
     allowed_values['month'] = [''] + [str(month) for month in xrange(1,13)]
     allowed_values['year'] = [''] +  [str(year) for year in xrange(1900,now.year+1)]
     allowed_values['decade'] =[''] + [str(decade) for decade in xrange(1900, now.year+1, 10)]
-    allowed_values['genre'] = ['', 'Action', 'Adventure', 'Animation', 'Biography', 'Comedy',
-              'Crime', 'Documentary', 'Drama', 'Family', 'Fantasy', 'Game-Show',
-              'History', 'Horror', 'Japanese', 'Korean', 'Music', 'Musical',
-              'Mystery', 'Reality-TV', 'Romance', 'Sci-Fi', 'Short', 'Sport',
-              'Talk-Show', 'Thriller', 'War', 'Western', 'Zombies']
+    allowed_values['genre'] = [''] + pw_scraper.get_genres()
     class AdvSearchDialog(xbmcgui.WindowXMLDialog):
         ypos=85
         gap=55
@@ -480,6 +678,98 @@ def get_adv_search_query(section):
         del dialog
         _1CH.log('Returning query of: %s' % (query)) 
         return query
+    else:
+        del dialog
+        raise
+
+def days_select(days):
+    OK_BUTTON = 200
+    CANCEL_BUTTON = 201
+    SEL_ALL_BUTTON = 99
+    MONDAY_BUTTON=77770
+    ACTION_PREVIOUS_MENU = 10
+    ACTION_BACK = 92
+    class EditDaysDialog(xbmcgui.WindowXMLDialog):
+        ystart=0
+        ygap=35
+        def onInit(self):
+            fdow=int(_1CH.get_setting('first-dow'))
+            adj_day_range=range(fdow,7) + range(0,fdow)
+            ypos=self.ystart
+            last_control=self.getControl(CANCEL_BUTTON)
+            for i in adj_day_range:
+                control=self.getControl(MONDAY_BUTTON+i)
+
+                # move the day control to it's position based on fdow
+                control.setPosition(0,ypos)
+                if str(i) in days:
+                    control.setSelected(True)
+                
+                # set up, down, left, right for each control
+                control.controlUp(last_control)
+                control.controlLeft(last_control)
+                last_control.controlDown(control)
+                last_control.controlRight(control)
+
+                ypos = ypos + self.ygap
+                last_control=control
+                
+            # select_all goes up to last control and last control goes down to select_all
+            select_all=self.getControl(SEL_ALL_BUTTON)
+            select_all.controlUp(control)
+            select_all.controlLeft(control)
+            control.controlDown(select_all)
+            control.controlRight(select_all)
+            
+            if days=='0123456':
+                self.getControl(SEL_ALL_BUTTON).setSelected(True)
+        
+        def onAction(self,action):
+            #print 'Action: %s' %(action.getId())
+            if action==ACTION_PREVIOUS_MENU or action==ACTION_BACK:
+                self.close()
+
+        def onControl(self,control):
+            #print 'onControl: %s' % (control)
+            pass
+            
+        def onFocus(self,control):
+            #print 'onFocus: %s' % (control)
+            pass
+            
+        def onClick(self, control):
+            #print 'onClick: %s' %(control)
+            if control==SEL_ALL_BUTTON:
+                all_status=self.getControl(control).isSelected()
+                for control_id in xrange(MONDAY_BUTTON,MONDAY_BUTTON+7):
+                    self.getControl(control_id).setSelected(all_status)
+                return
+            
+            if control==OK_BUTTON:
+                self.OK=True
+            if control==CANCEL_BUTTON:
+                self.OK=False
+                
+            if control==OK_BUTTON or control==CANCEL_BUTTON:
+                self.close()
+        
+        def clicked_OK(self):
+            return self.OK
+        
+        def get_days(self):
+            days=''
+            for i in xrange(0,7):
+                if self.getControl(MONDAY_BUTTON+i).isSelected():
+                    days += str(i)
+            return days
+                
+    dialog=EditDaysDialog('EditDaysDialog.xml', _1CH.get_path())
+    dialog.doModal()
+    if dialog.clicked_OK():
+        days=dialog.get_days()
+        _1CH.log('Returning days: %s' % (days))
+        del dialog
+        return days
     else:
         del dialog
         raise

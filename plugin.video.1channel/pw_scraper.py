@@ -23,7 +23,6 @@ import re
 import HTMLParser
 import xbmc
 import xbmcgui
-import sys
 import os
 import math
 import socket
@@ -35,35 +34,35 @@ USER_AGENT = ("User-Agent:Mozilla/5.0 (Windows NT 6.2; WOW64)"
               "AppleWebKit/537.17 (KHTML, like Gecko)"
               "Chrome/24.0.1312.56")
 
-_1CH = Addon('plugin.video.1channel', sys.argv)
+_1CH = Addon('plugin.video.1channel')
 ADDON_PATH = _1CH.get_path()
 ICON_PATH = os.path.join(ADDON_PATH, 'icon.png')
-ITEMS_PER_PAGE=24
-FAVS_PER_PAGE=40
-MAX_PAGES=10
 MAX_RETRIES=2
 TEMP_ERRORS=[500, 502, 503, 504]
 
 class PW_Scraper():
+    ITEMS_PER_PAGE = 24
+    ITEMS_PER_PAGE2 = 40
+    MAX_PAGES = 10
     def __init__(self, username, password):
         self.base_url = _1CH.get_setting('domain')
-        if (_1CH.get_setting("enableDomain")=='true') and (len(_1CH.get_setting("customDomain")) > 10):
+        if (_1CH.get_setting("enableDomain") == 'true') and (len(_1CH.get_setting("customDomain")) > 10):
             self.base_url = _1CH.get_setting("customDomain")
 
-        self.username=username
-        self.password=password
-        self.res_pages=-1
-        self.res_total=-1
-        self.imdb_num=''
+        self.username = username
+        self.password = password
+        self.res_pages = -1
+        self.res_total = -1
+        self.imdb_num = ''
     
-    def add_favorite(self,url):
+    def add_favorite(self, url):
         _1CH.log('Saving favorite to website: %s' % (url))
         id_num = re.search(r'.+(?:watch|tv)-([\d]+)-', url)
         if id_num:
             save_url = "%s/addtofavs.php?id=%s&whattodo=add"
             save_url = save_url % (self.base_url, id_num.group(1))
-            _1CH.log('Save URL: %s' %(save_url))
-            html = self.__get_url(save_url,login=True)
+            _1CH.log('Save URL: %s' % (save_url))
+            html = self.__get_url(save_url, login=True)
             ok_message = "<div class='ok_message'>Movie added to favorites"
             error_message = "<div class='error_message'>This video is already"
             if ok_message in html:
@@ -80,42 +79,242 @@ class PW_Scraper():
         if id_num:
             del_url = "%s/addtofavs.php?id=%s&whattodo=delete"
             del_url = del_url % (self.base_url, id_num.group(1))
-            _1CH.log('Delete URL: %s' %(del_url))
-            self.__get_url(del_url,login=True)
+            _1CH.log('Delete URL: %s' % (del_url))
+            self.__get_url(del_url, login=True)
     
-    def get_favorities(self, section, page=None, paginate=False):
+    def get_favorites(self, section, page=None, paginate=False):
+        if section!='tv': section='movies' # force section to be movies if it's not TV
         _1CH.log('Getting %s favorite from website' % (section))
         fav_url = '/profile.php?user=%s&fav&show=%s'
-        if page: fav_url += '&page=%s' %(page)
+        if page: fav_url += '&page=%s' % (page)
         url = self.base_url + fav_url % (self.username, section)
-        html=self.__get_url(url)
+        html = self.__get_url(url)
         r = re.search('strong>Favorites \(\s+([0-9,]+)\s+\)', html)
-        if r:
-            total = int(r.group(1).replace(',', ''))
-        else:
-            total = 0
-        self.res_pages = int(math.ceil(total/float(FAVS_PER_PAGE)))
-        self.res_total = total
-        return self.__get_fav_gen(html, url, page, paginate)   
-    
-    def __get_fav_gen(self, html, url, page, paginate):
-        if not page: page=1
+        self.__set_totals(r, PW_Scraper.ITEMS_PER_PAGE2)
+        
         pattern = '''<div class="index_item"> <a href="(.+?)"><img src="(.+?(\d{1,4})?\.jpg)" width="150" border="0">.+?<td align="center"><a href=".+?">(.+?)</a>'''
+        return self.__get_results_gen(html, url, page, paginate, pattern, self.__set_fav_result)   
+    
+    def __set_fav_result(self, match):
+        fav = {}
+        link, img, year, title = match
+        fav['url'] = link.replace('/tv-', '/watch-', 1) # hack the returned favorite url so that it matches all the other pages
+        fav['img'] = img
+        fav['year'] = year
+        fav['title'] = title
+        return fav
+    
+    def get_watched(self, section, page=None, paginate=False):
+        _1CH.log('Getting %s Watched list from website' % (section))
+        url = '/profile.php?user=%s&watched&show=%s'
+        if page: url += '&page=%s' % (page)
+        url = self.base_url + url % (self.username, section)
+        html=self.__get_url(url)
+        r = re.search('strong>Watched \(\s+([0-9,]+)\s+\)', html)
+        self.__set_totals(r, PW_Scraper.ITEMS_PER_PAGE2)
+        
+        pattern = '''<div class="index_item"> <a href="(.+?)"><img src="(.+?(\d{1,4})?\.jpg)" width="150" border="0">.+?<td align="center"><a href=".+?">(.+?)</a></td>'''
+        return self.__get_results_gen(html, url, page, paginate, pattern, self.__set_watched_result)   
+    
+    def get_towatch(self, section, page=None, paginate=False):
+        _1CH.log('Getting %s ToWatch list from website' % (section))
+        url = '/profile.php?user=%s&towatch&show=%s'
+        if page: url += '&page=%s' % (page)
+        url = self.base_url + url % (self.username, section)
+        html=self.__get_url(url)
+        r = re.search('strong>To Watch \(\s+([0-9,]+)\s+\)', html)
+        self.__set_totals(r, PW_Scraper.ITEMS_PER_PAGE2)
+        
+        pattern = '''<div class="index_item"> <a href="(.+?)"><img src="(.+?(\d{1,4})?\.jpg)" width="150" border="0">.+?<td align="center"><a href=".+?">(.+?)</a></td>'''
+        return self.__get_results_gen(html, url, page, paginate, pattern, self.__set_watched_result)  
+
+    def __set_watched_result(self, match):
+            result = {}
+            link, img, year, title = match
+            if not year or len(year) != 4: year = '' 
+            result['url']=link.replace('/tv-', '/watch-', 1) # hack the returned watched url so that it matches all the other pages
+            result['img']=img
+            result['year']=year
+            result['title']=title
+            return result
+        
+    # returns a generator of results of a title search each of which is a dictionary of url, title, img, and year
+    def search(self, section, query, page=None, paginate=False):
+        return self.__search(section, urllib.quote_plus(query), page, paginate)
+    
+    # returns a generator of results of a description search each of which is a dictionary of url, title, img, and year
+    def search_desc(self, section, query, page=None, paginate=False):
+        keywords = urllib.quote_plus(query)
+        keywords += '&desc_search=1'  # # 1 = Search Descriptions
+        return self.__search(section, keywords, page, paginate)
+
+    # returns a generator of results of a advanced search each of which is a dictionary of url, title, img, and year
+    def search_advanced(self, section, title, tag, description, country, genre, actor, director, year, month, decade, host='', rating='', advanced='1', page=None, paginate=False):
+        keywords = urllib.quote_plus(title)
+        if (description == True): keywords += '&desc_search=1'
+        keywords += '&tag=' + urllib.quote_plus(tag)
+        keywords += '&genre=' + urllib.quote_plus(genre)
+        keywords += '&actor_name=' + urllib.quote_plus(actor)
+        keywords += '&director=' + urllib.quote_plus(director)
+        keywords += '&country=' + urllib.quote_plus(country)
+        keywords += '&year=' + urllib.quote_plus(year)
+        keywords += '&month=' + urllib.quote_plus(month)
+        keywords += '&decade=' + urllib.quote_plus(decade)
+        keywords += '&host=' + urllib.quote_plus(host)
+        keywords += '&search_rating=' + urllib.quote_plus(rating)  # # Rating higher than (#), 0-4
+        keywords += '&advanced=' + urllib.quote_plus(advanced)
+        return self.__search(section, keywords, page, paginate)
+        
+    # internal search function once a search url is (mostly) built
+    def __search(self, section, keywords, page=None, paginate=False):
+        search_url = self.base_url + '/index.php?search_keywords='
+        search_url += keywords
+        html = self. __get_cached_url(self.base_url, cache_limit=0)
+        r = re.search('input type="hidden" name="key" value="([0-9a-f]*)"', html).group(1)
+        search_url += '&key=' + r
+        if section == 'tv': search_url += '&search_section=2'
+        if page: search_url += '&page=%s' % (page)
+        _1CH.log('Issuing search: %s' % (search_url))
+
+        html = self.__get_cached_url(search_url, cache_limit=0)
+        r = re.search('number_movies_result">([0-9,]+)', html)
+        self.__set_totals(r, PW_Scraper.ITEMS_PER_PAGE)
+
+        pattern = r'class="index_item.+?href="(.+?)" title="Watch (.+?)"?\(?([0-9]{4})?\)?"?>.+?src="(.+?)"'
+        return self.__get_results_gen(html, search_url, page, paginate, pattern, self.__set_search_result)
+    
+    def __set_search_result(self, match):
+            result = {}
+            link, title, year, img = match
+            result['url'] = link
+            result['title'] = title
+            result['year'] = year
+            result['img'] = img
+            return result
+
+    def get_filtered_results(self, section, genre, letter, sort, page=None, paginate=False):
+        pageurl = self.base_url + '/?'
+        if section == 'tv': pageurl += 'tv'
+        if genre:  pageurl += '&genre=' + genre
+        if letter:  pageurl += '&letter=' + letter
+        if sort:     pageurl += '&sort=' + sort
+        if page:   pageurl += '&page=%s' % page
+        _1CH.log('Getting filtered results: %s' % (pageurl))
+    
+        html = self.__get_cached_url(pageurl)
+    
+        r = re.search('number_movies_result">([0-9,]+)', html)
+        self.__set_totals(r, PW_Scraper.ITEMS_PER_PAGE)
+
+        pattern = r'class="index_item.+?href="(.+?)" title="Watch (.+?)"?\(?([0-9]{4})?\)?"?>.+?src="(.+?)"'
+        return self.__get_results_gen(html, pageurl, page, paginate, pattern, self.__set_filtered_result)
+
+    def get_playlists(self, public, sort=None, page=None, paginate=True):
+        page_url = self.base_url + '/playlists.php?'
+        if not public: page_url += 'user=%s' % (self.username)
+        if sort: page_url += '&sort=%s' % (sort)
+        if page: page_url += '&page=%s' % (page)
+        if public:
+            html = self.__get_cached_url(page_url)
+        else:
+            html = self.__get_url(page_url, login=True)
+        
+        # doesn't seem to be any way to find out total playlists in page?
+        r = re.search('&page=([\d,]+)"> >>', html)
+        if r:
+            self.res_pages = r.group(1).replace(',','')
+        else:
+            self.res_pages=1
+            
+        pattern=r'class="playlist_thumb\".*?img src=\"(.*?)\".*?<strong><a href="(.*?)">\s*(.*?)\s*</a>.*?([\d]+) items.*?([\d]+) Views \|\s*(.*?)\s*\|'
+        return self.__get_results_gen(html, page_url, page, paginate, pattern, self.__set_playlists_result)
+
+    def __set_playlists_result(self, match):
+        result = {}
+        img, url, title, item_count, views, rating = match
+        if not img.startswith('http://'): img=self.base_url + img
+        result['img'] = img
+        result['url'] = url
+        result['title'] = title
+        result['item_count'] = item_count
+        result['views'] = views
+        result['rating'] = rating
+        return result
+    
+    def show_playlist(self, playlist_url, public, sort=None):
+        url = self.base_url + playlist_url
+        if sort: url += '&sort=%s' % (sort)
+        if public:
+            html=self.__get_cached_url(url, 1)
+        else:
+            html=self.__get_url(url, login=True)
+        pattern=r'class="playlist_thumb\".*?img src=\"(.*?)\".*?href=\"(.*?)\">\s*(.*?)\s*<\/a>\s*\(?\s*([\d]*)\s*\)?'
+        return self.__get_results_gen(html, url, None, False, pattern, self.__set_playlist_result)
+    
+    def __set_playlist_result(self, match):
+        result={}
+        img, url, title, year = match
+        result['img']=img
+        result['url']='/'+url
+        result['url'] = result['url'].replace('/tv-', '/watch-', 1) # force tv urls to be consistent w/ movies
+        result['title']=title
+        result['year']=year
+        if url.startswith('tv-'):
+            result['video_type']='tvshow'
+        else:
+            result['video_type']='movie'
+        return result
+    
+    def remove_from_playlist(self, playlist_url, item_url):
+        _1CH.log('Removing item: %s from playlist %s' % (item_url, playlist_url))
+        return self.__manage_playlist(playlist_url, item_url, 'remove_existing')
+        
+    def add_to_playlist(self, playlist_url, item_url):
+        _1CH.log('Adding item %s to playlist %s' % (item_url, playlist_url))
+        return self.__manage_playlist(playlist_url, item_url, 'add_existing')
+    
+    def __manage_playlist(self, playlist_url, item_url, action):
+        playlist_id = re.search('\?id=(\d+)', playlist_url).group(1)
+        item_id = re.search('/watch-(\d+)-', item_url).group(1)
+        url = self.base_url + '/playlists.php?plistitemid=%s&whattodo=%s&edit=%s' % (item_id, action, playlist_id)
+        html = self.__get_url(url, login=True)
+        ok_message = "ok_message'>"
+        if ok_message in html:
+            return
+        else:
+            raise
+    
+    def get_genres(self):
+        html=self.__get_cached_url(self.base_url, cache_limit=24)
+        regex=re.compile('class="opener-menu-genre">(.*?)</ul>', re.DOTALL)
+        genre_frag=regex.search(html).group(1)
+        return re.findall('genre=(.*?)\"',genre_frag)
+    
+    def __set_filtered_result(self, match):
+        result = {}
+        link, title, year, img = match
+        result['url'] = link
+        result['img'] = img
+        result['year'] = year
+        result['title'] = title
+        return result
+        
+    # generic PW results parser. takes the html of the first result set, the base url of that set, what page to return, 
+    # whether or not to paginate, the pattern of match on, and a helper functon to set the return result 
+    def __get_results_gen(self, html, url, page, paginate, pattern, set_result):
+        if not page: page = 1
         regex = re.compile(pattern, re.IGNORECASE | re.DOTALL)
         while True:
-            fav={}
+            result = {}
             for item in regex.finditer(html):
-                link, img, year, title = item.groups()
-                if not year or len(year) != 4: year = ''
-                fav['url']=link
-                fav['img']=img
-                fav['year']=year
-                fav['title']=title
-                yield fav
+                result = set_result(item.groups())
+                result['title']=result['title'].strip()
+                if 'year' in result and (not result['year'] or len(result['year']) != 4): result['year'] = ''
+                yield result
             
             # if we're not paginating, then keep yielding until we run out of pages or hit the max
             if not paginate:
-                if html.find('> >> <') == -1 or int(page)>MAX_PAGES:
+                if html.find('> >> <') == -1 or int(page) > PW_Scraper.MAX_PAGES:
                     break
                 
                 page += 1
@@ -124,7 +323,16 @@ class PW_Scraper():
             # if we are paginating, just do this page
             else:
                 break
+            
+    def get_last_res_pages(self):
+        return self.res_pages
+
+    def get_last_res_total(self):
+        return self.res_total
     
+    def get_last_imdbnum(self):
+        return self.imdb_num
+
     def get_sources(self, url):
         html = self.__get_cached_url(self.base_url + url, cache_limit=2)
         adultregex = '<div class="offensive_material">.+<a href="(.+)">I understand'
@@ -148,7 +356,7 @@ class PW_Scraper():
                 if int(_1CH.get_setting(tier)) > 0:
                     method = sort_methods[int(_1CH.get_setting(tier))]
                     if _1CH.get_setting(tier + '-reversed') == 'true':
-                        method = '-%s' %method
+                        method = '-%s' % method
                     sort_order.append(method)
                 else: break
 
@@ -180,122 +388,12 @@ class PW_Scraper():
         
         return hosters
                     
-    # returns a generator of results of a title search each of which is a dictionary of url, title, img, and year
-    def search(self,section, query):
-        return self.__search(section, urllib.quote_plus(query))
-    
-    # returns a generator of results of a description search each of which is a dictionary of url, title, img, and year
-    def search_desc(self, section, query):
-        keywords = urllib.quote_plus(query)
-        keywords += '&desc_search=1' ## 1 = Search Descriptions
-        return self.__search(section, keywords)
-
-    # returns a generator of results of a advanced search each of which is a dictionary of url, title, img, and year
-    def search_advanced(self, section, query, tag, description, country, genre, actor, director, year, month, decade, host, rating, advanced):
-        keywords = urllib.quote_plus(query)
-        if (description==True): keywords += '&desc_search=1'
-        keywords += '&tag=' + urllib.quote_plus(tag)
-        keywords += '&genre=' + urllib.quote_plus(genre)
-        keywords += '&actor_name=' + urllib.quote_plus(actor)
-        keywords += '&director=' + urllib.quote_plus(director)
-        keywords += '&country=' + urllib.quote_plus(country)
-        keywords += '&year=' + urllib.quote_plus(year)
-        keywords += '&month=' + urllib.quote_plus(month)
-        keywords += '&decade=' + urllib.quote_plus(decade)
-        keywords += '&host=' + urllib.quote_plus(host)
-        keywords += '&search_rating=' + urllib.quote_plus(rating) ## Rating higher than (#), 0-4
-        keywords += '&advanced=' + urllib.quote_plus(advanced)
-        return self.__search(section, keywords)
-        
-    # internal search function once a search url is (mostly) built
-    def __search(self, section, keywords):
-        search_url = self.base_url + '/index.php?search_keywords='
-        search_url += keywords
-        html =self. __get_cached_url(self.base_url, cache_limit=0)
-        r = re.search('input type="hidden" name="key" value="([0-9a-f]*)"', html).group(1)
-        search_url += '&key=' + r
-        if section == 'tv': search_url += '&search_section=2'
-        _1CH.log('Issuing search: %s' % (search_url))
-
-        html = self.__get_cached_url(search_url, cache_limit=0)
-        r = re.search('number_movies_result">([0-9,]+)', html)
-        if r:
-            total = int(r.group(1).replace(',', ''))
-        else:
-            total = 0
-        self.res_pages = int(math.ceil(total/float(ITEMS_PER_PAGE)))
-        self.res_total = total
-        return self.__search_gen(html,search_url)
-    
-    # generator function for search results
-    def __search_gen(self,html,search_url):
-        page=1
-        while page<=MAX_PAGES:
-            pattern = r'class="index_item.+?href="(.+?)" title="Watch (.+?)"?\(?([0-9]{4})?\)?"?>.+?src="(.+?)"'
-            result={}
-            for item in re.finditer(pattern, html, re.DOTALL):
-                link, title, year, img = item.groups()
-                if not year or len(year) != 4: year = ''
-                result['url']=link
-                result['title']=title
-                result['year']=year
-                result['img']=img
-                yield result
-            
-            if html.find('> >> <') == -1:
-                break
-            
-            page += 1
-            pageurl = '%s&page=%s' % (search_url, page)
-            html = self.__get_cached_url(pageurl, cache_limit=0)
-
-    def get_filtered_results(self, section, genre, letter, sort, page=None):
-        pageurl = self.base_url + '/?'
-        if section == 'tv': pageurl += 'tv'
-        if genre:  pageurl += '&genre=' + genre
-        if letter:  pageurl += '&letter=' + letter
-        if sort:     pageurl += '&sort=' + sort
-        if page:   pageurl += '&page=%s' % page
-        _1CH.log('Getting filtered results: %s' % (pageurl))
-    
-        html = self.__get_cached_url(pageurl)
-    
-        r = re.search('number_movies_result">([0-9,]+)', html)
-        if r:
-            total = int(r.group(1).replace(',', ''))
-        else:
-            total = 0
-        self.res_pages = int(math.ceil(total/float(ITEMS_PER_PAGE)))
-        return self.__filtered_results_gen(html)
-        
-    def __filtered_results_gen(self, html):
-        pattern = r'class="index_item.+?href="(.+?)" title="Watch (.+?)"?\(?([0-9]{4})?\)?"?>.+?src="(.+?)"'
-        regex = re.compile(pattern, re.DOTALL)
-        result={}
-        for item in regex.finditer(html):
-            link, title, year, img = item.groups()
-            if not year or len(year) != 4: year = ''
-            result['url']=link
-            result['title']=title
-            result['year']=year
-            result['img']=img
-            yield result
-    
-    def get_last_res_pages(self):
-        return self.res_pages
-
-    def get_last_res_total(self):
-        return self.res_total
-    
-    def get_last_imdbnum(self):
-        return self.imdb_num
-
     def get_season_list(self, url, cached=True):
-        _1CH.log('Getting season list (%s): %s' % (cached,url))
+        _1CH.log_debug('Getting season list (%s): %s' % (cached, url))
         if cached:
-            html = self.__get_cached_url(self.base_url+url)
+            html = self.__get_cached_url(self.base_url + url)
         else:
-            html = self.__get_url(self.base_url+url)
+            html = self.__get_url(self.base_url + url)
             
         adultregex = '<div class="offensive_material">.+<a href="(.+)">I understand'
         r = re.search(adultregex, html, re.DOTALL)
@@ -309,6 +407,27 @@ class PW_Scraper():
         self.imdb_num = match.group(1) if match else ''
         return self.__season_gen(html)
     
+    def change_watched(self, primewire_url, action, whattodo):
+        if not utils.website_is_integrated(): return
+        
+        _1CH.log("Update Website %s List" % action.capitalize() )
+        id_num = re.search(r'.+(?:watch|tv)-([\d]+)-', primewire_url)
+        if id_num:
+            change_url = '%s/addtowatched.php?id=%s&action=%s&whattodo=%s'            
+            change_url = change_url % (self.base_url, id_num.group(1), action.lower(), whattodo.lower())
+            _1CH.log('%s %s URL: %s' %(whattodo.capitalize(), action.capitalize(), change_url))
+            self.__get_url(change_url,login=True)       
+        else:
+            _1CH.log("pw.scraper.change_watched() couldn't scrape primewire ID")
+
+    def __set_totals(self, r, items_per_page):
+        if r:
+            total = int(r.group(1).replace(',', ''))
+        else:
+            total = 0
+        self.res_pages = int(math.ceil(total / float(items_per_page)))
+        self.res_total = total
+    
     def __season_gen(self, html):
         match = re.search('tv_container(.+?)<div class="clearer', html, re.DOTALL)
         if not match:
@@ -321,19 +440,18 @@ class PW_Scraper():
             r = re.search(r'<a.+?>Season (\d+)</a>', season_html)
             if r:
                 season_label = r.group(1)
-                yield (season_label,season_html)
+                yield (season_label, season_html)
     
     def __get_url(self,url, headers={}, login=False):
         before = time.time()
-        html = self.__http_get_with_retry_1(url, headers)
-  
+        html = self.__http_get_with_retry_1(url, headers)  
         if login and not '<a href="/logout.php">[ Logout ]</a>' in html:
             _1CH.log('Logging in for url %s' % url)
             if self.__login(self.base_url):
                 html = self.__http_get_with_retry_1(url, headers)
             else:
-                html=None
-                _1CH.log("Login failed for %s getting: %s" % (self.username,url))
+                html = None
+                _1CH.log("Login failed for %s getting: %s" % (self.username, url))
 
         # addon.net tries to use page's Content Type to convert to unicode
         # if it fails (usually because the data in the page doesn't match the Content Type), then the page encoding is left as-is
@@ -342,19 +460,19 @@ class PW_Scraper():
             html = unicode(html, 'windows-1252')
             
         after = time.time()
-        _1CH.log('Url Fetch took: %.2f secs' % (after-before))
+        _1CH.log_debug('Url Fetch took: %.2f secs' % (after - before))
         return html
 
     def __get_cached_url(self, url, cache_limit=8):
-        _1CH.log('Fetching Cached URL: %s' % url)
+        _1CH.log_debug('Fetching Cached URL: %s' % url)
         before = time.time()
         
-        html=utils.get_cached_url(url, cache_limit)
+        html = utils.get_cached_url(url, cache_limit)
         if html:
-            _1CH.log('Returning cached result for: %s' % (url))
+            _1CH.log_debug('Returning cached result for: %s' % (url))
             return html
         
-        _1CH.log('No cached url found for: %s' % url)
+        _1CH.log_debug('No cached url found for: %s' % url)
         req = urllib2.Request(url)
     
         host = re.sub('http://', '', self.base_url)
@@ -367,8 +485,8 @@ class PW_Scraper():
             if '<title>Are You a Robot?</title>' in body:
                 _1CH.log('bot detection')
     
-                #download the captcha image and save it to a file for use later
-                captchaimgurl = 'http://'+host+'/CaptchaSecurityImages.php'
+                # download the captcha image and save it to a file for use later
+                captchaimgurl = 'http://' + host + '/CaptchaSecurityImages.php'
                 captcha_save_path = xbmc.translatePath('special://userdata/addon_data/plugin.video.1channel/CaptchaSecurityImage.jpg')
                 req = urllib2.Request(captchaimgurl)
                 host = re.sub('http://', '', self.base_url)
@@ -377,12 +495,12 @@ class PW_Scraper():
                 req.add_header('Referer', self.base_url)
                 response = urllib2.urlopen(req)
                 the_img = response.read()
-                with open(captcha_save_path,'wb') as f:
+                with open(captcha_save_path, 'wb') as f:
                     f.write(the_img)
     
-                #now pop open dialog for input
-                #TODO: make the size and loc configurable
-                img = xbmcgui.ControlImage(550,15,240,100,captcha_save_path)
+                # now pop open dialog for input
+                # TODO: make the size and loc configurable
+                img = xbmcgui.ControlImage(550, 15, 240, 100, captcha_save_path)
                 wdlg = xbmcgui.WindowDialog()
                 wdlg.addControl(img)
                 wdlg.show()
@@ -392,13 +510,13 @@ class PW_Scraper():
                 if (kb.isConfirmed()):
                     userInput = kb.getText()
                 if userInput != '':
-                    #post back user string
+                    # post back user string
                     wdlg.removeControl(img)    
                     capcode = kb.getText()
                     data = {'security_code':capcode,
                             'not_robot':'I\'m Human! I Swear!'}
                     data = urllib.urlencode(data)
-                    roboturl = 'http://'+host+'/are_you_a_robot.php'
+                    roboturl = 'http://' + host + '/are_you_a_robot.php'
                     req = urllib2.Request(roboturl)
                     host = re.sub('http://', '', self.base_url)
                     req.add_header('User-Agent', USER_AGENT)
@@ -423,7 +541,7 @@ class PW_Scraper():
         
         utils.cache_url(url, body)
         after = time.time()
-        _1CH.log('Cached Url Fetch took: %.2f secs' % (after-before))
+        _1CH.log_debug('Cached Url Fetch took: %.2f secs' % (after - before))
         return body
     
     def __login(self,redirect):
