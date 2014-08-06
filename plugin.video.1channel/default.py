@@ -613,7 +613,7 @@ def browse_playlists(public,sort=None, page=None, paginate=True):
     playlists=pw_scraper.get_playlists(public, sort, page, paginate)
     total_pages = pw_scraper.get_last_res_pages()
     for playlist in playlists:
-        title = '%s (%s items) (%s views) (rating %s)' % (playlist['title'], playlist['item_count'], playlist['views'], playlist['rating'])
+        title = '%s (%s items) (%s views) (rating %s)' % (playlist['title'].encode('ascii', 'ignore'), playlist['item_count'], playlist['views'], playlist['rating'])
         _1CH.add_directory({'mode': MODES.SHOW_PLAYLIST, 'url': playlist['url'], 'public': public}, {'title': title}, img=playlist['img'],fanart=art('fanart.png'))
 
     if not page: page = 1
@@ -639,8 +639,11 @@ def show_playlist(url, public):
 
     # one playlist can contain both movies and tvshows so can't set the params for the whole playlist/section
     item_params={}
-    item_params['subs'] = [row[0] for row in db_connection.get_subscriptions()]
-    item_params['fav_urls']=utils.get_fav_urls()
+    item_params['subs'] = [row[0] for row in utils.get_subscriptions()]
+    if utils.website_is_integrated():
+        item_params['fav_urls']=[]
+    else:
+        item_params['fav_urls']=utils.get_fav_urls()
     item_params['xbmc_fav_urls']=utils.get_xbmc_fav_urls()
     for item in items:
         item_params.update(get_item_params(item))
@@ -871,6 +874,9 @@ def build_listitem(section_params, title, year, img, resurl, imdbnum='', season=
                        'img': img, 'year': year}
             runstring = 'RunPlugin(%s)' % _1CH.build_plugin_url(queries)
             menu_items.append(('Subscribe', runstring), )
+        else:
+            runstring = 'RunPlugin(%s)' % _1CH.build_plugin_url({'mode': MODES.CANCEL_SUB, 'url': resurl})
+            menu_items.append(('Cancel subscription', runstring,))
     else:
         plugin_str = 'plugin://plugin.video.couchpotato_manager'
         plugin_str += '/movies/add?title=%s' % title
@@ -889,7 +895,7 @@ def build_listitem(section_params, title, year, img, resurl, imdbnum='', season=
 
         menu_items.append(('Show Information', 'XBMC.Action(Info)'), )
 
-        queries = {'mode': MODES.REFRESH_META, 'video_type': section_params['video_type'], 'title': meta['title'], 'imdb': meta['imdb_id'],
+        queries = {'mode': MODES.REFRESH_META, 'video_type': section_params['video_type'], 'title': meta['title'], 'imdbnum': meta['imdb_id'],
                    'alt_id': 'imdbnum', 'year': year}
         runstring = _1CH.build_plugin_url(queries)
         runstring = 'RunPlugin(%s)' % runstring
@@ -1288,6 +1294,7 @@ def browse_towatch_website(section, page=None):
     xbmcplugin.endOfDirectory(int(sys.argv[1]), cacheToDisc=_1CH.get_setting('dir-cache')=='true')
 
 def create_meta(video_type, title, year, thumb):
+    print 'Calling Create Meta: %s, %s, %s' % (video_type, title, year)
     try:
         year = int(year)
     except:
@@ -1297,9 +1304,9 @@ def create_meta(video_type, title, year, thumb):
     if META_ON:
         try:
             if video_type == 'tvshow':
-                meta = __metaget__.get_meta(video_type, title)
+                meta = __metaget__.get_meta(video_type, title, year=year)
                 if not (meta['imdb_id'] or meta['tvdb_id']):
-                    meta = __metaget__.get_meta(video_type, title, year=year)
+                    meta = __metaget__.get_meta(video_type, title)
 
             else:  # movie
                 meta = __metaget__.get_meta(video_type, title, year=year)
@@ -1711,8 +1718,8 @@ def movie_update(section, genre, letter, sort, page):
 def select_sources(url, title, img, year, imdbnum, dialog):
     get_sources(url, title, img, year, imdbnum, dialog, False)
 
-@pw_dispatcher.register(MODES.REFRESH_META, ['video_type', 'title', 'imdbnum', 'alt_id', 'year'])
-def refresh_meta(video_type, title, imdbnum, alt_id, year):
+@pw_dispatcher.register(MODES.REFRESH_META, ['video_type', 'title', 'alt_id'], ['imdbnum', 'year'])
+def refresh_meta(video_type, title, alt_id, imdbnum='', year=''):
     utils.refresh_meta(video_type, title, imdbnum, alt_id, year)
 
 @pw_dispatcher.register(MODES.META_SETTINGS)
