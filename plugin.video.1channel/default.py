@@ -52,10 +52,10 @@ USE_POSTERS = _1CH.get_setting('use-posters') == 'true'
 POSTERS_FALLBACK = _1CH.get_setting('posters-fallback') == 'true'
 THEME_LIST = ['Classic', 'Glossy_Black', 'PrimeWire']
 THEME = THEME_LIST[int(_1CH.get_setting('theme'))]
-try:
+if xbmc.getCondVisibility('System.HasAddon(script.1channel.themepak)'):
     themepak_path = xbmcaddon.Addon('script.1channel.themepak').getAddonInfo('path')
-except:
-    themepak_path = ''
+else:
+    themepak_path=''
 THEME_PATH = os.path.join(themepak_path, 'art', 'themes', THEME)
 
 ICON_PATH = os.path.join(_1CH.get_path(), 'icon.png')
@@ -79,7 +79,7 @@ if not xbmcvfs.exists(_1CH.get_profile()):
 def art(name): 
     return os.path.join(THEME_PATH, name)
 
-@pw_dispatcher.register(MODES.SAVE_FAV, ['fav_type', 'title', 'url', 'year'])
+@pw_dispatcher.register(MODES.SAVE_FAV, ['fav_type', 'title', 'url'], ['year'])
 def save_favorite(fav_type, title, url, year):
     if fav_type != 'tv': fav_type = 'movie'
     _1CH.log('Saving Favorite type: %s name: %s url: %s year: %s' % (fav_type, title, url, year))
@@ -1016,8 +1016,8 @@ def GetFilteredResults(section, genre='', letter='', sort='alphabet', page=None,
 
     xbmcplugin.endOfDirectory(int(sys.argv[1]), cacheToDisc=_1CH.get_setting('dir-cache')=='true')
 
-@pw_dispatcher.register(MODES.SEASON_LIST, ['url', 'title', 'year'], ['tvdbnum'])
-def TVShowSeasonList(url, title, year, old_imdb='', tvdbnum=''):
+@pw_dispatcher.register(MODES.SEASON_LIST, ['url', 'title'], ['year', 'tvdbnum'])
+def TVShowSeasonList(url, title, year='', old_imdb='', tvdbnum=''):
     _1CH.log('Seasons for TV Show %s' % url)
     season_gen=pw_scraper.get_season_list(url)
     seasons = list(season_gen) # copy the generator into a list so that we can iterate over it multiple times
@@ -1063,7 +1063,7 @@ def TVShowSeasonList(url, title, year, old_imdb='', tvdbnum=''):
         listitem.setInfo('video', temp)
         listitem.setProperty('fanart_image', fanart)
         listitem.addContextMenuItems([], replaceItems=True)
-        queries = {'mode': MODES.EPISODE_LIST, 'season': season_num,
+        queries = {'mode': MODES.EPISODE_LIST, 'season': season_num, 'year': year,
                    'imdbnum': imdbnum, 'title': title}
         li_url = _1CH.build_plugin_url(queries)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), li_url, listitem,
@@ -1080,8 +1080,8 @@ def TVShowSeasonList(url, title, year, old_imdb='', tvdbnum=''):
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
     utils.set_view('seasons', 'seasons-view')
     
-@pw_dispatcher.register(MODES.EPISODE_LIST, ['title', 'season', 'imdbnum']) # TVShowEpisodeList(title, season, imdbnum, tvdbnum)
-def TVShowEpisodeList(title, season, imdbnum):
+@pw_dispatcher.register(MODES.EPISODE_LIST, ['title', 'season', 'imdbnum'], ['year']) # TVShowEpisodeList(title, season, imdbnum, tvdbnum)
+def TVShowEpisodeList(title, season, imdbnum, year=''):
     season_html = db_connection.get_cached_season(season)
     r = '"tv_episode_item".+?href="(.+?)">(.*?)</a>'
     episodes = re.finditer(r, season_html, re.DOTALL)
@@ -1096,7 +1096,7 @@ def TVShowEpisodeList(title, season, imdbnum):
         season = int(re.search('/season-([0-9]{1,4})-', epurl).group(1))
         epnum = int(re.search('-episode-([0-9]{1,3})', epurl).group(1))
 
-        create_item(section_params, title, '', '', epurl, imdbnum, season, epnum)
+        create_item(section_params, title, year, '', epurl, imdbnum, season, epnum)
 
     xbmcplugin.endOfDirectory(int(sys.argv[1]), cacheToDisc=_1CH.get_setting('dir-cache')=='true')
 
