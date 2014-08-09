@@ -1080,8 +1080,8 @@ def TVShowSeasonList(url, title, year='', old_imdb='', tvdbnum=''):
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
     utils.set_view('seasons', 'seasons-view')
     
-@pw_dispatcher.register(MODES.EPISODE_LIST, ['title', 'season', 'imdbnum'], ['year']) # TVShowEpisodeList(title, season, imdbnum, tvdbnum)
-def TVShowEpisodeList(title, season, imdbnum, year=''):
+@pw_dispatcher.register(MODES.EPISODE_LIST, ['title', 'season'], ['imdbnum', 'year']) # TVShowEpisodeList(title, season, imdbnum, tvdbnum)
+def TVShowEpisodeList(title, season, imdbnum='', year=''):
     season_html = db_connection.get_cached_season(season)
     r = '"tv_episode_item".+?href="(.+?)">(.*?)</a>'
     episodes = re.finditer(r, season_html, re.DOTALL)
@@ -1771,8 +1771,8 @@ def toggle_xbmc_fav(title, url, img, action, is_playable=False):
 def main(argv=None):
     if sys.argv: argv=sys.argv
 
-    _1CH.log(_1CH.queries)
-    _1CH.log(argv)
+    _1CH.log('Version: |%s| Queries: |%s|' % (_1CH.get_version(),_1CH.queries))
+    _1CH.log('Args: |%s|' % (argv))
     
     # don't process params that don't match our url exactly. (e.g. plugin://plugin.video.1channel/extrafanart)
     plugin_url = 'plugin://%s/' % (_1CH.get_id())
