@@ -80,7 +80,7 @@ def art(name):
     return os.path.join(THEME_PATH, name)
 
 @pw_dispatcher.register(MODES.SAVE_FAV, ['fav_type', 'title', 'url'], ['year'])
-def save_favorite(fav_type, title, url, year):
+def save_favorite(fav_type, title, url, year=''):
     if fav_type != 'tv': fav_type = 'movie'
     _1CH.log('Saving Favorite type: %s name: %s url: %s year: %s' % (fav_type, title, url, year))
     
@@ -694,6 +694,7 @@ def add_search_item(queries, label):
     liz = xbmcgui.ListItem(label=label, iconImage=art('search.png'), thumbnailImage=art('search.png'))
     liz.setProperty('IsPlayable', 'false')
     liz.setProperty('fanart_image', art('fanart.png'))
+    liz.setInfo('video', {'title': label})
     liz_url = _1CH.build_plugin_url(queries)
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), liz_url, liz, isFolder=False)
 
@@ -1325,8 +1326,8 @@ def repair_missing_images():
     _1CH.log("Repairing Metadata Images")
     db_connection.repair_meta_images()
 
-@pw_dispatcher.register(MODES.ADD2LIB, ['video_type', 'url', 'title', 'year'], ['img', 'imdbnum'])
-def manual_add_to_library(video_type, url, title, year, img='', imdbnum=''):
+@pw_dispatcher.register(MODES.ADD2LIB, ['video_type', 'url', 'title'], ['year', 'img', 'imdbnum'])
+def manual_add_to_library(video_type, url, title, year='', img='', imdbnum=''):
     add_to_library(video_type, url, title, img, year, imdbnum)
     builtin = "XBMC.Notification(PrimeWire, Added '%s' to library,2000, %s)" % (title, ICON_PATH)
     xbmc.executebuiltin(builtin)
