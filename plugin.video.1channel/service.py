@@ -24,7 +24,7 @@ from utils import MODES
 from db_utils import DB_Connection
 
 ADDON = xbmcaddon.Addon(id='plugin.video.1channel')
-xbmc.log('1Channel: Installed Version: %s' % (ADDON.getAddonInfo('version')))
+utils.log('Service: Installed Version: %s' % (ADDON.getAddonInfo('version')))
 
 db_connection = DB_Connection()
 db_connection.init_database()
@@ -44,10 +44,10 @@ class Service(xbmc.Player):
 
         self.last_run = 0
         self.DB = ''
-        xbmc.log('1Channel: Service starting...')
+        utils.log('Service: starting...')
 
     def reset(self):
-        xbmc.log('1Channel: Service: Resetting...')
+        utils.log('Service: Resetting...')
         win = xbmcgui.Window(10000)
         win.clearProperty('1ch.playing.title')
         win.clearProperty('1ch.playing.year')
@@ -67,10 +67,10 @@ class Service(xbmc.Player):
 
 
     def onPlayBackStarted(self):
-        xbmc.log('1Channel: Service: Playback started')
+        utils.log('Service: Playback started')
         meta = self.win.getProperty('1ch.playing')
         if meta: #Playback is ours
-            xbmc.log('1Channel: Service: tracking progress...')
+            utils.log('Service: tracking progress...')
             self.tracking = True
             self.meta = json.loads(meta)
             self.video_type = 'tvshow' if 'episode' in self.meta else 'movie'
@@ -84,15 +84,15 @@ class Service(xbmc.Player):
             while self._totalTime == 0:
                 xbmc.sleep(1000)
                 self._totalTime = self.getTotalTime()
-                xbmc.log("Total Time: %s"   % (self._totalTime))
+                utils.log("Total Time: %s"   % (self._totalTime), xbmc.LOGDEBUG)
 
     def onPlayBackStopped(self):
-        xbmc.log('1Channel: Playback Stopped')
+        utils.log('Service: Playback Stopped')
         #Is the item from our addon?
         if self.tracking:
             download_id=self.win.getProperty('download_id')
             if download_id:
-                xbmc.log('Stopping Axel Download: %s' % (download_id))
+                utils.log('Service: Stopping Axel Download: %s' % (download_id), xbmc.LOGDEBUG)
                 import axelproxy as proxy
                 axelhelper =  proxy.ProxyHelper()
                 axelhelper.stop_download(download_id)
@@ -103,25 +103,25 @@ class Service(xbmc.Player):
             except: percent_played=0 # guard div by zero
             pTime = utils.format_time(playedTime)
             tTime = utils.format_time(self._totalTime)
-            xbmc.log('1Channel: Service: Played %s of %s total = %s%%/%s%%' % (pTime, tTime, percent_played, min_watched_percent))
+            utils.log('Service: Played %s of %s total = %s%%/%s%%' % (pTime, tTime, percent_played, min_watched_percent))
             videotype = 'movie' if self.video_type == 'movie' else 'episode'
             if playedTime == 0 and self._totalTime == 999999:
                 raise RuntimeError('XBMC silently failed to start playback')
             elif (percent_played >= min_watched_percent):
                 if (self.video_type == 'movie' or (self.meta['season'] and self.meta['episode'])):
-                    xbmc.log('PrimeWire: Service: Threshold met. Marking item as watched')                
+                    utils.log('Service: Threshold met. Marking item as watched', xbmc.LOGDEBUG)                
                     video_title = self.meta['title'] if self.video_type == 'movie' else self.meta['TVShowTitle']                
                     dbid = self.meta['DBID'] if 'DBID' in self.meta else ''
                     builtin = 'RunPlugin(plugin://plugin.video.1channel/?mode=%s&imdbnum=%s&video_type=%s&title=%s&season=%s&episode=%s&year=%s&primewire_url=%s&dbid=%s&watched=%s)'
                     xbmc.executebuiltin(builtin % (MODES.CH_WATCH, self.meta['imdb'], videotype,video_title.strip(), self.meta['season'], self.meta['episode'], self.meta['year'], self.primewire_url, dbid, True))
                 db_connection.clear_bookmark(self.primewire_url)
             elif playedTime>0:
-                xbmc.log('1Channel: Service: Threshold not met. Setting bookmark on %s to %s seconds' % (self.primewire_url,playedTime))
+                utils.log('Service: Threshold not met. Setting bookmark on %s to %s seconds' % (self.primewire_url,playedTime), xbmc.LOGDEBUG)
                 db_connection.set_bookmark(self.primewire_url,playedTime)
         self.reset()
 
     def onPlayBackEnded(self):
-        xbmc.log('1Channel: Playback completed')
+        utils.log('Service: Playback completed')
         self.onPlayBackStopped()
 
 migrate_settings()
@@ -140,4 +140,4 @@ while not xbmc.abortRequested:
         monitor._lastPos = monitor.getTime()
 
     xbmc.sleep(1000)
-xbmc.log('1Channel: Service: shutting down...')
+utils.log('Service: shutting down...')
