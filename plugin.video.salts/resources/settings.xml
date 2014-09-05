@@ -1,0 +1,60 @@
+<settings>
+	<category label="Trakt.tv">
+		<setting id="username" type="text" label="Trakt Username" default=""/>
+		<setting id="password" type="text" label="Trakt Password" default="" option="hidden"/>
+	    <setting id="use_https" type="bool" label="Use HTTPS" default="false"/>
+		<setting id="trakt_timeout" type="slider" label="Trakt Timeout (seconds) (0=No Limit)" default="5" range="0,120" option="int"/>
+		<setting id="calendar-day" type="slider" label="Calendar Start Day (0=Today)" default="0" range="-7,7" option="int"/>
+	    <setting id="TV_sub_slug" type="text" visible="false"/>
+	    <setting id="Movies_sub_slug" type="text" visible="false"/>
+	    <setting id="TV_fav_slug" type="text" visible="false"/>
+	    <setting id="Movies_fav_slug" type="text" visible="false"/>
+	    <setting id="remind_count" type="number" default="0" visible="false"/>
+    </category>
+    <category label="Library Integration">
+	    <setting id="tvshow-folder" type="folder" label="TV Show Folder"
+	             default="special://userdata/addon_data/plugin.video.salts/TVShows"/>
+	    <setting id="movie-folder" type="folder" label="Movie Folder"
+	             default="special://userdata/addon_data/plugin.video.salts/Movies"/>
+		<setting id="auto-update_subs" type="bool" label="Automatically Update Subscriptions" default="false"/>
+		<setting id="update_subs-interval" type="slider" range=".5,.5,24" option="float" label="     Update Interval (hours)" default="2" visible="eq(-1,true)"/>
+		<setting id="require_source" type="bool" label="     Require Site Page?" default="true" visible="eq(-2,true)"/>
+		<setting id="update_subs-during-startup" type="bool" label="     During StartUp?" default="false" visible="eq(-3,true)"/>
+		<setting id="update_subs-during-playback" type="bool" label="     During Playback?" default="false" visible="eq(-4,true)"/>
+		<setting id="include_movies" type="bool" label="     Include Movies?" default="false" visible="eq(-5,true)"/>
+		<setting id="library-update" type="bool" label="     Update Library Afterward?" default="false" visible="eq(-6,true)"/>
+		<setting id="update_subs-notify" type="bool" label="     Show Notifications?" default="false" visible="eq(-7,true)"/>
+		<setting id="cleanup-subscriptions" type="bool" label="     Prune Ended Shows?" default="false" visible="eq(-8,true)"/>
+	</category>
+	<category label="Source Management">
+		<setting id="disabled_scrapers" type="text" visible="false"/>
+        <setting id="auto-play" type="bool" label="Auto-Play Sources" default="false" enable="false"/>
+		<setting id="source-win" type="labelenum" label="     Source Selection Method" values="Directory|Dialog" default="Dialog"/>
+		<setting id="parallel_mode" type="enum" label="Parallel Mode" values="Threads|Processes|None" default="0"/>
+		<setting id="source_timeout" type="slider" label="Scraper Timeout (seconds) (0=No Limit)" default="5" range="0,120" option="int"/>
+		<setting id="source_results" type="number" label="Maximum Source Results (0=No Limit)" default="0"/>
+		<setting id="enable_sort" type="bool" label="Sort Sources" default="false"/>
+		<setting id="filter-unknown" type="bool" label="Drop Sources with unknown sort values" default="false" visible="eq(-1,true)"/>
+		<setting id="source_sort_order" type="text" label="Source Sort Order" default="" visible="eq(-2,true)"/>
+		<setting id="sort1_field" type="enum" label="1st Sort Key" values="None|Source|Quality|Views|Rating" default="0" visible="eq(-3,true)"/>
+		<setting id="sort1_order" type="enum" label="1st Sort Key Order" values="Best to Worst|Worst to Best" default="0" visible="eq(-4,true) + !eq(-1,0)"/>
+		<setting id="sort2_field" type="enum" label="2nd Sort Key" values="None|Source|Quality|Views|Rating" default="0" visible="eq(-5,true) + !eq(-2,0)"/>
+		<setting id="sort2_order" type="enum" label="2nd Sort Key Order" values="Best to Worst|Worst to Best" default="0" visible="eq(-6,true) + !eq(-1,0)+!eq(-3,0)"/>
+		<setting id="sort3_field" type="enum" label="3rd Sort Key" values="None|Source|Quality|Views|Rating" default="0" visible="eq(-7,true) + !eq(-2,0) + !eq(-4,0)"/>
+		<setting id="sort3_order" type="enum" label="3rd Sort Key Order" values="Best to Worst|Worst to Best" default="0" visible="eq(-8,true) + !eq(-1,0) + !eq(-3,0) + !eq(-5,0) "/>
+		<setting id="sort4_field" type="enum" label="4th Sort Key" values="None|Source|Quality|Views|Rating" default="0" visible="eq(-9,true) + !eq(-2,0) + !eq(-4,0) + !eq(-6,0)"/>
+		<setting id="sort4_order" type="enum" label="4th Sort Key Order" values="Best to Worst|Worst to Best" default="0" visible="eq(-10,true) + !eq(-1,0) + !eq(-3,0) + !eq(-5,0) + !eq(-7,0)"/>
+	</category>
+	<category label="Database">
+		<setting id="use_remote_db" type="bool" label="Use a MySQL DB" default="False"/>
+        <setting id="db_address" type="text" label="    Address" enable="eq(-1,true)" visible="eq(-1,true)" default=""/>
+        <setting id="db_port" type="integer" label="    Port" enable="eq(-2,true)" visible="eq(-2,true)" default=""/>
+        <setting id="db_user" type="text" label="    Username" enable="eq(-3,true)" visible="eq(-3,true)" default=""/>
+        <setting id="db_pass" type="text" label="    Password" enable="eq(-4,true)" visible="eq(-4,true)" default="" option="hidden"/>
+        <setting id="db_name" type="text" label="    Database" enable="eq(-5,true)" visible="eq(-5,true)" default="salts_db"/>
+        <setting id="flush_cache" type="action" label="Flush webpage cache..." enable="true"
+                 action="RunPlugin(plugin://plugin.video.salts/?mode=flush_cache)"/>
+        <setting id="reset_db" type="action" label="Reset SALTS DB ([COLOR red]SQLITE Only[/COLOR])" enable="true"
+                 action="RunPlugin(plugin://plugin.video.salts/?mode=reset_db)"/>
+	</category>	
+</settings>
