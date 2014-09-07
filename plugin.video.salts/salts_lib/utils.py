@@ -6,6 +6,7 @@ import xbmcgui
 import xbmcplugin
 import log_utils
 import sys
+import md5
 from constants import *
 from scrapers import * # import all scrapers into this namespace
 from addon.common.addon import Addon
@@ -175,12 +176,12 @@ def get_sort_key(item):
             break
         elif field in SORT_KEYS:
             if field == 'source':
-                value=item['class'].get_name().lower()
+                value=item['class'].get_name()
             else:
                 value=item[field]
             
             if value in SORT_KEYS[field]:
-                    item_sort_key.append(sign*SORT_KEYS[field][value])
+                item_sort_key.append(sign*SORT_KEYS[field][value])
             else: # assume all unlisted values sort as worst
                 item_sort_key.append(sign*-1)
         else:
@@ -191,15 +192,31 @@ def get_sort_key(item):
     #print 'item: %s sort_key: %s' % (item, item_sort_key)
     return tuple(item_sort_key)
 
-def make_source_sortkey():
+def make_source_sort_key():
     sso=ADDON.get_setting('source_sort_order')
+    sort_key={}
+    i=0
     if sso:
-        sso = sso.replace(' ', '')
-        sources = sso.split(',')
+        sources = sso.split('|')
         sort_key={}
         for i,source in enumerate(sources):
-            sort_key[source.lower()]=i
-        return sort_key        
+            sort_key[source]=-i
+        
+    scrapers = relevant_scrapers(include_disabled=True)
+    for j, scraper in enumerate(scrapers):
+        if scraper.get_name() not in sort_key:
+            sort_key[scraper.get_name()]=-(i+j)
+    
+    return sort_key
+
+def get_source_sort_key(item):
+    sort_key=make_source_sort_key()
+    return -sort_key[item.get_name()]
+        
+def make_source_sort_string(sort_key):
+    sorted_key = sorted(sort_key.items(), key=lambda x: -x[1])
+    sort_string = '|'.join([element[0] for element in sorted_key])
+    return sort_string
 
 def start_worker(q, func, args):
     if P_MODE == P_MODES.THREADS:
@@ -300,7 +317,7 @@ def url_exists(video_type, title, year, season='', episode=''):
     check each source for a url for this video; return True as soon as one is found. If none are found, return False
     """
     max_timeout = int(ADDON.get_setting('source_timeout'))
-    log_utils.log('url_exists: |%s|%s|%s|%s|%s|' % (video_type, title, year, season, episode), xbmc.LOGDEBUG)
+    log_utils.log('Checking for Url Existence: |%s|%s|%s|%s|%s|' % (video_type, title, year, season, episode), xbmc.LOGDEBUG)
     for cls in relevant_scrapers(video_type):
         scraper_instance=cls(max_timeout)
         url = scraper_instance.get_url(video_type, title, year, season, episode)
@@ -311,13 +328,16 @@ def url_exists(video_type, title, year, season='', episode=''):
     log_utils.log('No url found for: |%s|%s|%s|%s|%s|' % (video_type, title, year, season, episode))
     return False
 
-def relevant_scrapers(video_type=None, include_disabled=False):
+def relevant_scrapers(video_type=None, include_disabled=False, order_matters=False):
     classes=scraper.Scraper.__class__.__subclasses__(scraper.Scraper)
     relevant=[]
     for cls in classes:
         if video_type is None or video_type in cls.provides():
             if include_disabled or scraper_enabled(cls.get_name()):
                 relevant.append(cls)
+    
+    if order_matters:
+        relevant.sort(key=get_source_sort_key)
     return relevant
 
 def scraper_enabled(name):
@@ -354,3 +374,39 @@ def set_view(content):
     xbmcplugin.addSortMethod(handle=int(sys.argv[1]), sortMethod=xbmcplugin.SORT_METHOD_PROGRAM_COUNT)
     xbmcplugin.addSortMethod(handle=int(sys.argv[1]), sortMethod=xbmcplugin.SORT_METHOD_VIDEO_RUNTIME)
     xbmcplugin.addSortMethod(handle=int(sys.argv[1]), sortMethod=xbmcplugin.SORT_METHOD_GENRE)
+
+def make_day(date):
+    try: date=datetime.datetime.strptime(date,'%Y-%m-%d').date()
+    except TypeError: date = datetime.datetime(*(time.strptime(date, '%Y-%m-%d')[0:6])).date()
+    today=datetime.date.today()
+    day_diff = (date - today).days
+    if day_diff == -1:
+        date='Yesterday'
+    elif day_diff == 0:
+        date='Today'
+    elif day_diff == 1:
+        date='Tomorrow'
+    elif day_diff > 1 and day_diff < 7:
+        date = date.strftime('%A')
+
+    return date
+
+def valid_account():
+    username=ADDON.get_setting('username')
+    password=ADDON.get_setting('password')
+    last_hash=ADDON.get_setting('last_hash')
+    cur_hash = md5.new(username+password).hexdigest()
+    if cur_hash != last_hash:
+        try:
+            valid_account=trakt_api.valid_account()
+        except:
+            valid_account=False
+        log_utils.log('Checked valid account (%s): %s != %s' % (valid_account, last_hash, cur_hash), xbmc.LOGDEBUG)
+
+        if valid_account:
+            ADDON.set_setting('last_hash', cur_hash)
+    else:
+        log_utils.log('Assuming valid account: %s == %s' % (last_hash, cur_hash), xbmc.LOGDEBUG)
+        valid_account=True
+        
+    return valid_account

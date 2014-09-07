@@ -4,6 +4,7 @@
 		<setting id="password" type="text" label="Trakt Password" default="" option="hidden"/>
 	    <setting id="use_https" type="bool" label="Use HTTPS" default="false"/>
 		<setting id="trakt_timeout" type="slider" label="Trakt Timeout (seconds) (0=No Limit)" default="5" range="0,120" option="int"/>
+		<setting id="last_hash" type="text" default="" visible="false"/>
 		<setting id="calendar-day" type="slider" label="Calendar Start Day (0=Today)" default="0" range="-7,7" option="int"/>
 	    <setting id="TV_sub_slug" type="text" visible="false"/>
 	    <setting id="Movies_sub_slug" type="text" visible="false"/>
@@ -33,17 +34,17 @@
 		<setting id="parallel_mode" type="enum" label="Parallel Mode" values="Threads|Processes|None" default="0"/>
 		<setting id="source_timeout" type="slider" label="Scraper Timeout (seconds) (0=No Limit)" default="5" range="0,120" option="int"/>
 		<setting id="source_results" type="number" label="Maximum Source Results (0=No Limit)" default="0"/>
+		<setting id="source_sort_order" type="text" label="Source Sort Order" enable="false" visible="false"/>
 		<setting id="enable_sort" type="bool" label="Sort Sources" default="false"/>
 		<setting id="filter-unknown" type="bool" label="Drop Sources with unknown sort values" default="false" visible="eq(-1,true)"/>
-		<setting id="source_sort_order" type="text" label="Source Sort Order" default="" visible="eq(-2,true)"/>
-		<setting id="sort1_field" type="enum" label="1st Sort Key" values="None|Source|Quality|Views|Rating" default="0" visible="eq(-3,true)"/>
-		<setting id="sort1_order" type="enum" label="1st Sort Key Order" values="Best to Worst|Worst to Best" default="0" visible="eq(-4,true) + !eq(-1,0)"/>
-		<setting id="sort2_field" type="enum" label="2nd Sort Key" values="None|Source|Quality|Views|Rating" default="0" visible="eq(-5,true) + !eq(-2,0)"/>
-		<setting id="sort2_order" type="enum" label="2nd Sort Key Order" values="Best to Worst|Worst to Best" default="0" visible="eq(-6,true) + !eq(-1,0)+!eq(-3,0)"/>
-		<setting id="sort3_field" type="enum" label="3rd Sort Key" values="None|Source|Quality|Views|Rating" default="0" visible="eq(-7,true) + !eq(-2,0) + !eq(-4,0)"/>
-		<setting id="sort3_order" type="enum" label="3rd Sort Key Order" values="Best to Worst|Worst to Best" default="0" visible="eq(-8,true) + !eq(-1,0) + !eq(-3,0) + !eq(-5,0) "/>
-		<setting id="sort4_field" type="enum" label="4th Sort Key" values="None|Source|Quality|Views|Rating" default="0" visible="eq(-9,true) + !eq(-2,0) + !eq(-4,0) + !eq(-6,0)"/>
-		<setting id="sort4_order" type="enum" label="4th Sort Key Order" values="Best to Worst|Worst to Best" default="0" visible="eq(-10,true) + !eq(-1,0) + !eq(-3,0) + !eq(-5,0) + !eq(-7,0)"/>
+		<setting id="sort1_field" type="enum" label="1st Sort Key" values="None|Source|Quality|Views|Rating" default="0" visible="eq(-2,true)"/>
+		<setting id="sort1_order" type="enum" label="1st Sort Key Order" values="Best to Worst|Worst to Best" default="0" visible="eq(-3,true) + !eq(-1,0)"/>
+		<setting id="sort2_field" type="enum" label="2nd Sort Key" values="None|Source|Quality|Views|Rating" default="0" visible="eq(-4,true) + !eq(-2,0)"/>
+		<setting id="sort2_order" type="enum" label="2nd Sort Key Order" values="Best to Worst|Worst to Best" default="0" visible="eq(-5,true) + !eq(-1,0)+!eq(-3,0)"/>
+		<setting id="sort3_field" type="enum" label="3rd Sort Key" values="None|Source|Quality|Views|Rating" default="0" visible="eq(-6,true) + !eq(-2,0) + !eq(-4,0)"/>
+		<setting id="sort3_order" type="enum" label="3rd Sort Key Order" values="Best to Worst|Worst to Best" default="0" visible="eq(-7,true) + !eq(-1,0) + !eq(-3,0) + !eq(-5,0) "/>
+		<setting id="sort4_field" type="enum" label="4th Sort Key" values="None|Source|Quality|Views|Rating" default="0" visible="eq(-8,true) + !eq(-2,0) + !eq(-4,0) + !eq(-6,0)"/>
+		<setting id="sort4_order" type="enum" label="4th Sort Key Order" values="Best to Worst|Worst to Best" default="0" visible="eq(-9,true) + !eq(-1,0) + !eq(-3,0) + !eq(-5,0) + !eq(-7,0)"/>
 	</category>
 	<category label="Database">
 		<setting id="use_remote_db" type="bool" label="Use a MySQL DB" default="False"/>

@@ -20,12 +20,18 @@ import urllib2
 import urllib
 import sha
 import re
+import socket
+import ssl
 import xbmc
 import log_utils
 from db_utils import DB_Connection
 from constants import TRAKT_SECTIONS
+from constants import TEMP_ERRORS
 
 class TraktError(Exception):
+    pass
+
+class TransientTraktError(Exception):
     pass
 
 BASE_URL = 'api.trakt.tv'
@@ -170,5 +176,15 @@ class Trakt_API():
                 #log_utils.log('Trakt Response: %s' % (response), xbmc.LOGDEBUG)
                 return response
 
+        except ssl.SSLError as e:
+            raise TransientTraktError('Temporary Trakt Error: '+str(e))
+        except socket.timeout as e:
+            raise TransientTraktError('Temporary Trakt Error: '+str(e))
+        except urllib2.HTTPError as e:
+            # if it's a temporary code, retry
+            if e.code in TEMP_ERRORS:
+                raise TransientTraktError('Temporary Trakt Error: '+str(e))
+            else:
+                raise
         except Exception as e:
             raise TraktError('Trakt Error: '+str(e))
