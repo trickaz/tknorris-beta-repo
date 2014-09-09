@@ -16,6 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 import scraper
+import xbmcaddon
 from salts_lib.constants import VIDEO_TYPES
 
 from salts_lib.db_utils import DB_Connection
@@ -24,11 +25,7 @@ BASE_URL = ''
 class Dummy_Scraper(scraper.Scraper):
     def __init__(self, timeout=scraper.DEFAULT_TIMEOUT):
         self.db_connection = DB_Connection()
-        base_url = self.db_connection.get_setting('%s_base_url' % (self.get_name()))
-        if not base_url:
-            self.base_url = BASE_URL
-        else:
-            self.base_url = base_url
+        self.base_url = xbmcaddon.Addon().getSetting('%s-base_url' % (self.get_name()))
     
     @classmethod
     def provides(cls):

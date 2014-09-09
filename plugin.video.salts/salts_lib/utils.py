@@ -131,16 +131,16 @@ def make_info(item, show=''):
     if 'people' in show: info['castandrole']=['%s as %s' % (actor['name'],actor['character']) for actor in show['people']['actors'] if actor['name'] and actor['character']]
     return info
     
-def get_section_params(section):
+def get_section_params(section, set_sort=True):
     section_params={}
     section_params['section']=section
     if section==SECTIONS.TV:
-        set_view('tvshows')
+        set_view('tvshows', set_sort)
         section_params['next_mode']=MODES.SEASONS
         section_params['folder']=True
         section_params['video_type']=VIDEO_TYPES.TVSHOW
     else:
-        set_view('movies')
+        set_view('movies', set_sort)
         section_params['next_mode']=MODES.GET_SOURCES
         section_params['folder']=ADDON.get_setting('source-win')=='Directory'
         section_params['video_type']=VIDEO_TYPES.MOVIE
@@ -341,39 +341,23 @@ def relevant_scrapers(video_type=None, include_disabled=False, order_matters=Fal
     return relevant
 
 def scraper_enabled(name):
-    return '|%s|' % (name) not in ADDON.get_setting('disabled_scrapers')
+    # return true if setting exists and set to true, or setting doesn't exist (i.e. '')
+    return ADDON.get_setting('%s-enable' % (name)) in ['true', '']
 
-def enable_scraper(name):
-    if not scraper_enabled(name):
-        disabled=ADDON.get_setting('disabled_scrapers')
-        pattern = '|%s|' % (name)
-        pieces = disabled.split(pattern)
-        disabled='|'.join(pieces)
-        if disabled=='|': disabled=''
-        ADDON.set_setting('disabled_scrapers', disabled)
-
-def disable_scraper(name):
-    if scraper_enabled(name):
-        disabled=ADDON.get_setting('disabled_scrapers')
-        if not disabled:
-            disabled = '|%s|' % (name)
-        else:
-            disabled = '%s%s|' % (disabled, name)
-        ADDON.set_setting('disabled_scrapers', disabled)
-
-def set_view(content):
+def set_view(content, set_sort):
     # set content type so library shows more views and info
     if content:
         xbmcplugin.setContent(int(sys.argv[1]), content)
 
     # set sort methods - probably we don't need all of them
-    xbmcplugin.addSortMethod(handle=int(sys.argv[1]), sortMethod=xbmcplugin.SORT_METHOD_UNSORTED)
-    xbmcplugin.addSortMethod(handle=int(sys.argv[1]), sortMethod=xbmcplugin.SORT_METHOD_LABEL)
-    xbmcplugin.addSortMethod(handle=int(sys.argv[1]), sortMethod=xbmcplugin.SORT_METHOD_VIDEO_RATING)
-    xbmcplugin.addSortMethod(handle=int(sys.argv[1]), sortMethod=xbmcplugin.SORT_METHOD_DATE)
-    xbmcplugin.addSortMethod(handle=int(sys.argv[1]), sortMethod=xbmcplugin.SORT_METHOD_PROGRAM_COUNT)
-    xbmcplugin.addSortMethod(handle=int(sys.argv[1]), sortMethod=xbmcplugin.SORT_METHOD_VIDEO_RUNTIME)
-    xbmcplugin.addSortMethod(handle=int(sys.argv[1]), sortMethod=xbmcplugin.SORT_METHOD_GENRE)
+    if set_sort:
+        xbmcplugin.addSortMethod(handle=int(sys.argv[1]), sortMethod=xbmcplugin.SORT_METHOD_UNSORTED)
+        xbmcplugin.addSortMethod(handle=int(sys.argv[1]), sortMethod=xbmcplugin.SORT_METHOD_LABEL)
+        xbmcplugin.addSortMethod(handle=int(sys.argv[1]), sortMethod=xbmcplugin.SORT_METHOD_VIDEO_RATING)
+        xbmcplugin.addSortMethod(handle=int(sys.argv[1]), sortMethod=xbmcplugin.SORT_METHOD_DATE)
+        xbmcplugin.addSortMethod(handle=int(sys.argv[1]), sortMethod=xbmcplugin.SORT_METHOD_PROGRAM_COUNT)
+        xbmcplugin.addSortMethod(handle=int(sys.argv[1]), sortMethod=xbmcplugin.SORT_METHOD_VIDEO_RUNTIME)
+        xbmcplugin.addSortMethod(handle=int(sys.argv[1]), sortMethod=xbmcplugin.SORT_METHOD_GENRE)
 
 def make_day(date):
     try: date=datetime.datetime.strptime(date,'%Y-%m-%d').date()
@@ -410,3 +394,66 @@ def valid_account():
         valid_account=True
         
     return valid_account
+
+def format_sub_label(sub):
+    label = '%s - [%s] - (' % (sub['language'], sub['version'])
+    if sub['completed']:
+        color='green'
+    else:
+        label += '%s%% Complete, ' % (sub['percent'])
+        color='yellow'
+    if sub['hi']: label += 'HI, '
+    if sub['corrected']: label += 'Corrected, '
+    if sub['hd']: label += 'HD, '
+    if not label.endswith('('):
+        label = label[:-2] + ')'
+    else:
+        label = label[:-4]
+    label='[COLOR %s]%s[/COLOR]' % (color, label)
+    return label
+
+def srt_indicators_enabled():
+    return (ADDON.get_setting('enable-subtitles')=='true' and (ADDON.get_setting('subtitle-indicator')=='true'))
+
+def srt_download_enabled():
+    return (ADDON.get_setting('enable-subtitles')=='true' and (ADDON.get_setting('subtitle-download')=='true'))
+
+def srt_show_enabled():
+    return (ADDON.get_setting('enable-subtitles')=='true' and (ADDON.get_setting('subtitle-show')=='true'))
+
+def format_episode_label(label, season, episode, srts):
+    req_hi = ADDON.get_setting('subtitle-hi')=='true'
+    req_hd = ADDON.get_setting('subtitle-hd')=='true'
+    color='red'
+    percent=0
+    hi=None
+    hd=None
+    corrected=None
+    
+    for srt in srts:
+        if str(season)==srt['season'] and str(episode)==srt['episode']:
+            if not req_hi or srt['hi']:
+                if not req_hd or srt['hd']:
+                    if srt['completed']:
+                        color='green'
+                        if not hi: hi=srt['hi']
+                        if not hd: hd=srt['hd']
+                        if not corrected: corrected=srt['corrected']
+                    elif color!='green':
+                        color='yellow'
+                        if float(srt['percent'])>percent:
+                            if not hi: hi=srt['hi']
+                            if not hd: hd=srt['hd']
+                            if not corrected: corrected=srt['corrected']
+                            percent=srt['percent']
+    
+    if color!='red':
+        label += ' [COLOR %s](SRT: ' % (color)
+        if color=='yellow':
+            label += ' %s%%, ' % (percent)
+        if hi: label += 'HI, '
+        if hd: label += 'HD, '
+        if corrected: label += 'Corrected, '
+        label = label[:-2]
+        label+= ')[/COLOR]'
+    return label

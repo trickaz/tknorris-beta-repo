@@ -46,6 +46,22 @@
 		<setting id="sort4_field" type="enum" label="4th Sort Key" values="None|Source|Quality|Views|Rating" default="0" visible="eq(-8,true) + !eq(-2,0) + !eq(-4,0) + !eq(-6,0)"/>
 		<setting id="sort4_order" type="enum" label="4th Sort Key Order" values="Best to Worst|Worst to Best" default="0" visible="eq(-9,true) + !eq(-1,0) + !eq(-3,0) + !eq(-5,0) + !eq(-7,0)"/>
 	</category>
+	
+	<category label="Scrapers">
+    </category>
+
+    <category label="Subtitles">
+    	<setting type="lsep" label="Subtitles work only for TV Shows currently"/>
+    	<setting id="enable-subtitles" type="bool" label="Enable Subtitles" default="false"/>
+		<setting id="subtitle-indicator" type="bool" label="Show subtitle indicators" default="true" enable="eq(-1,true)"/>
+    	<setting id="subtitle-lang" type="text" label="Subtitle Language" default="English" enable="eq(-2,true)"/>
+    	<setting id="subtitle-hi" type="bool" label="Require Hearing Impaired" default="false" enable="eq(-3,true)"/>
+    	<setting id="subtitle-hd" type="bool" label="Require HD" default="false" enable="eq(-4,true)"/>
+    	<setting id="subtitle-download" type="bool" label="Download Subtitles on playback" default="true" enable="eq(-5,true)"/>
+        <setting id="subtitle-folder" type="folder" label="Subtitle Download Folder" default="special://userdata/addon_data/plugin.video.salts/Subtitles" enable="eq(-1,true)+eq(-6,true)"/>
+        <setting id="subtitle-show" type="bool" label="Show Subtitles on Playback" default="false" enable="eq(-2,true)+eq(-7,true)"/>
+    </category>
+
 	<category label="Database">
 		<setting id="use_remote_db" type="bool" label="Use a MySQL DB" default="False"/>
         <setting id="db_address" type="text" label="    Address" enable="eq(-1,true)" visible="eq(-1,true)" default=""/>

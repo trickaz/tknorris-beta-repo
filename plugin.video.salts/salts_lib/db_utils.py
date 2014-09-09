@@ -152,6 +152,18 @@ class DB_Connection():
         sql = 'REPLACE INTO db_info (setting, value) VALUES (?, ?)'
         self.__execute(sql, (setting, value))
     
+#     def set_tvshow_id(self, title, year, tvshow_id):
+#         sql = 'REPLACE INTO tvshow_rel (title, year, tvshow_Id) VALUES (?, ?, ?)'
+#         self.__execute(sql, (title, year, tvshow_id))
+#     
+#     def get_tvshow_id(self, title, year):
+#         sql = "SELECT tvshow_id FROM tvshow_rel WHERE title=? and year=?"
+#         rows=self.__execute(sql, (title, year))
+#         if rows:
+#             return rows[0][0]
+#         else:
+#             return None
+#     
     def execute_sql(self, sql):
         self.__execute(sql)
 

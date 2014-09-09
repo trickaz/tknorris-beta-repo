@@ -27,6 +27,7 @@ import log_utils
 from db_utils import DB_Connection
 from constants import TRAKT_SECTIONS
 from constants import TEMP_ERRORS
+from constants import SECTIONS
 
 class TraktError(Exception):
     pass
@@ -93,8 +94,15 @@ class Trakt_API():
         url='/recommendations/%s/%s' % (TRAKT_SECTIONS[section], API_KEY)
         return self.__call_trakt(url)
         
-    def get_friends_activity(self, section):
-        url='/activity/friends.json/%s/%s' % (API_KEY, TRAKT_SECTIONS[section][:-1])
+    def get_friends_activity(self, section, include_episodes=False):
+        if section == SECTIONS.TV:
+            types='show'
+            if include_episodes:
+                types += ',episode'
+        elif section == SECTIONS.MOVIES:
+            types='movie'
+
+        url='/activity/friends.json/%s/%s' % (API_KEY, types)
         return self.__call_trakt(url)
         
     def get_calendar(self, start_date=None):

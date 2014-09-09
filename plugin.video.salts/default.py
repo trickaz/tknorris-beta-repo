@@ -27,6 +27,7 @@ import xbmcvfs
 from addon.common.addon import Addon
 from salts_lib.db_utils import DB_Connection
 from salts_lib.url_dispatcher import URL_Dispatcher
+from salts_lib.srt_scraper import SRT_Scraper
 from salts_lib.trakt_api import Trakt_API, TransientTraktError
 from salts_lib import utils
 from salts_lib import log_utils
@@ -79,6 +80,7 @@ def browse_menu(section):
         if VALID_ACCOUNT: _SALTS.add_directory({'mode': MODES.MY_CAL}, {'title': 'My Calendar'})
         _SALTS.add_directory({'mode': MODES.CAL}, {'title': 'General Calendar'})
         _SALTS.add_directory({'mode': MODES.PREMIERES}, {'title': 'Premiere Calendar'})
+        if VALID_ACCOUNT: _SALTS.add_directory({'mode': MODES.FRIENDS_EPISODE, 'section': section}, {'title': 'Friends Episode Activity'})
     if VALID_ACCOUNT: _SALTS.add_directory({'mode': MODES.FRIENDS, 'section': section}, {'title': 'Friends Activity'})
     _SALTS.add_directory({'mode': MODES.SEARCH, 'section': section}, {'title': 'Search'})
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
@@ -108,10 +110,6 @@ def scraper_settings():
 
         queries = {'mode': MODES.TOGGLE_SCRAPER, 'name': cls.get_name()}
         menu_items.append((toggle_label, 'RunPlugin(%s)' % (_SALTS.build_plugin_url(queries))), )
-        queries = {'mode': MODES.SET_BASE_URL, 'name': cls.get_name()}
-        menu_items.append(('Set Base Url', 'RunPlugin(%s)' % (_SALTS.build_plugin_url(queries))), )
-        queries = {'mode': MODES.RESET_BASE_URL, 'name': cls.get_name()}
-        menu_items.append(('Reset Base Url', 'RunPlugin(%s)' % (_SALTS.build_plugin_url(queries))), )
         liz.addContextMenuItems(menu_items, replaceItems=True)
         
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), liz_url, liz, isFolder=False)
@@ -132,34 +130,12 @@ def move_scraper(name, direction, other):
 @url_dispatcher.register(MODES.TOGGLE_SCRAPER, ['name'])
 def toggle_scraper(name):
     if utils.scraper_enabled(name):
-        utils.disable_scraper(name)
+        setting='false'
     else:
-        utils.enable_scraper(name)
+        setting='true'
+    _SALTS.set_setting('%s-enable' % (name), setting)
     xbmc.executebuiltin("XBMC.Container.Refresh")
     
-@url_dispatcher.register(MODES.SET_BASE_URL, ['mode', 'name'])
-@url_dispatcher.register(MODES.RESET_BASE_URL, ['mode', 'name'])
-def set_base_url(mode, name):
-    setting = '%s_base_url' % (name)
-    for cls in utils.relevant_scrapers(None, True):
-        if cls.get_name() == name:
-            old_base_url = cls().base_url
-
-    if mode == MODES.SET_BASE_URL:
-        keyboard = xbmc.Keyboard()
-        keyboard.setHeading('Enter Base Url for %s Scraper' % (name))
-        keyboard.setDefault(old_base_url) 
-        keyboard.doModal()
-        if keyboard.isConfirmed():
-            new_base_url=keyboard.getText()
-        else:
-            return
-    elif mode == MODES.RESET_BASE_URL:
-        new_base_url = ''
-
-    if old_base_url != new_base_url:
-        db_connection.set_setting(setting, new_base_url)
-
 @url_dispatcher.register(MODES.TRENDING, ['section'])
 def browse_trending(section):
     list_data = trakt_api.get_trending(section)
@@ -170,22 +146,36 @@ def browse_recommendations(section):
     list_data = trakt_api.get_recommendations(section)
     make_dir_from_list(section, list_data)
 
-@url_dispatcher.register(MODES.FRIENDS, ['section'])
-def browse_friends(section):
-    section_params=utils.get_section_params(section)
-    activities=trakt_api.get_friends_activity(section)
+@url_dispatcher.register(MODES.FRIENDS, ['mode', 'section'])
+@url_dispatcher.register(MODES.FRIENDS_EPISODE, ['mode', 'section'])
+def browse_friends(mode, section):
+    section_params=utils.get_section_params(section, set_sort = False)
+    activities=trakt_api.get_friends_activity(section, mode==MODES.FRIENDS_EPISODE)
     totalItems=len(activities)
     
     for activity in activities['activity']:
-        liz, liz_url = make_item(section_params, activity[TRAKT_SECTIONS[section][:-1]])
+        if 'episode' in activity:
+            show=activity['show']
+            liz, liz_url = make_episode_item(show, activity['episode'], show['images']['fanart'], show_subs=False)
+            folder=_SALTS.get_setting('source-win')=='Directory'
+            label=liz.getLabel()
+            label = '%s (%s) - %s' % (show['title'], show['year'], label)
+            liz.setLabel(label) 
+        else:
+            liz, liz_url = make_item(section_params, activity[TRAKT_SECTIONS[section][:-1]])
+            folder = section_params['folder']
+
+        if not folder:
+            liz.setProperty('IsPlayable', 'true')
 
         label=liz.getLabel()
-        label += ' (%s %s' % (activity['user']['username'], activity['action'])
-        if activity['action']=='rating': label += ' - %s' % (activity['rating'])
-        label += ')'
+        action = ' [[COLOR blue]%s[/COLOR] [COLOR green]%s' % (activity['user']['username'], activity['action'])
+        if activity['action']=='rating': action += ' - %s' % (activity['rating'])
+        action += '[/COLOR]]'
+        label = '%s %s' % (action, label)
         liz.setLabel(label)
         
-        xbmcplugin.addDirectoryItem(int(sys.argv[1]), liz_url, liz,isFolder=section_params['folder'],totalItems=totalItems)
+        xbmcplugin.addDirectoryItem(int(sys.argv[1]), liz_url, liz,isFolder=folder,totalItems=totalItems)        
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
 @url_dispatcher.register(MODES.MY_CAL, ['mode'], ['start_date'])
@@ -352,9 +342,7 @@ def browse_episodes(slug, season, fanart):
     episodes=trakt_api.get_episodes(slug, season)
     totalItems=len(episodes)
     for episode in episodes:
-        liz=make_episode_item(show, episode, fanart)
-        queries = {'mode': MODES.GET_SOURCES, 'video_type': VIDEO_TYPES.EPISODE, 'title': show['title'], 'year': show['year'], 'season': episode['season'], 'episode': episode['episode'], 'slug': slug}
-        liz_url = _SALTS.build_plugin_url(queries)
+        liz, liz_url =make_episode_item(show, episode, fanart)
         if not folder:
             liz.setProperty('IsPlayable', 'true')
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), liz_url, liz,isFolder=folder,totalItems=totalItems)
@@ -439,6 +427,25 @@ def resolve_source(class_url, video_type, slug, class_name, season='', episode='
     hoster_url = scraper_instance.resolve_link(class_url)
     return play_source(hoster_url, video_type, slug, season, episode)
 
+def download_subtitles(language, title, year, season, episode):
+    srt_scraper=SRT_Scraper()
+    tvshow_id=srt_scraper.get_tvshow_id(title, year)
+    if tvshow_id is None:
+        return
+     
+    subs=srt_scraper.get_episode_subtitles(language, tvshow_id, season, episode)
+    sub_labels=[]
+    for sub in subs:
+        sub_labels.append(utils.format_sub_label(sub))
+     
+    index=0
+    if len(sub_labels)>1:
+        dialog = xbmcgui.Dialog()       
+        index = dialog.select('Choose a subtitle to download', sub_labels)
+         
+    if subs and index > -1:
+        return srt_scraper.download_subtitle(subs[index]['url'])
+    
 def play_source(hoster_url, video_type, slug, season='', episode=''):
     if hoster_url is None:
         return True
@@ -460,6 +467,13 @@ def play_source(hoster_url, video_type, slug, season='', episode=''):
         info = utils.make_info(item)
         art=utils.make_art(item)
     
+    if video_type == VIDEO_TYPES.EPISODE and utils.srt_download_enabled():
+        srt_path = download_subtitles(_SALTS.get_setting('subtitle-lang'), details['show']['title'], details['show']['year'], season, episode)
+        if utils.srt_show_enabled() and srt_path:
+            log_utils.log('Setting srt path: %s' % (srt_path), xbmc.LOGDEBUG)
+            win = xbmcgui.Window(10000)
+            win.setProperty('salts.playing.srt', srt_path)
+
     listitem = xbmcgui.ListItem(path=stream_url, iconImage=art['thumb'], thumbnailImage=art['thumb'])
     listitem.setProperty('fanart_image', art['fanart'])
     try: listitem.setArt(art)
@@ -622,6 +636,18 @@ def set_related_url(mode, video_type, title, year, season='', episode=''):
                         break
     finally:
         utils.reap_workers(workers, None)
+
+@url_dispatcher.register(MODES.EDIT_TVSHOW_ID, ['title'], ['year'])
+def edit_tvshow_id(title, year=''):
+    srt_scraper=SRT_Scraper()
+    tvshow_id=srt_scraper.get_tvshow_id(title, year)
+    keyboard = xbmc.Keyboard()
+    keyboard.setHeading('Input TVShow ID')
+    if tvshow_id:
+        keyboard.setDefault(str(tvshow_id))
+    keyboard.doModal()
+    if keyboard.isConfirmed():
+        db_connection.set_related_url(VIDEO_TYPES.TVSHOW, title, year, SRT_SOURCE, keyboard.getText())
                 
 @url_dispatcher.register(MODES.REM_FROM_LIST, ['slug', 'section', 'id_type', 'show_id'])
 def remove_from_list(slug, section, id_type, show_id):
@@ -839,12 +865,9 @@ def make_dir_from_cal(mode, start_date, days):
         date=utils.make_day(day['date'])
         for episode_elem in day['episodes']:
             show=episode_elem['show']
-            slug=trakt_api.get_slug(show['url'])
             episode=episode_elem['episode']
             fanart=show['images']['fanart']
-            liz=make_episode_item(show, episode, fanart)
-            queries = {'mode': MODES.GET_SOURCES, 'video_type': VIDEO_TYPES.EPISODE, 'title': show['title'], 'year': show['year'], 'season': episode['season'], 'episode': episode['number'], 'slug': slug}
-            liz_url = _SALTS.build_plugin_url(queries)
+            liz, liz_url =make_episode_item(show, episode, fanart, show_subs=False)
             label=liz.getLabel()
             label = '[[COLOR deeppink]%s[/COLOR]] %s - %s' % (date, show['title'], label.decode('utf-8', 'replace'))
             if episode['season']==1 and episode['number']==1:
@@ -858,10 +881,20 @@ def make_dir_from_cal(mode, start_date, days):
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), liz_url, liz, isFolder=True)    
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
-def make_episode_item(show, episode, fanart):
+def make_episode_item(show, episode, fanart, show_subs=True):
     if 'episode' in episode: episode_num=episode['episode']
     else:  episode_num=episode['number']
     label = '%sx%s %s' % (episode['season'], episode_num, episode['title'])
+    if show_subs and utils.srt_indicators_enabled():
+        srt_scraper=SRT_Scraper()
+        language=_SALTS.get_setting('subtitle-lang')
+        tvshow_id=srt_scraper.get_tvshow_id(show['title'], show['year'])
+        if tvshow_id is not None:
+            srts=srt_scraper.get_episode_subtitles(language, tvshow_id, episode['season'], episode_num)
+        else:
+            srts=[]
+        label = utils.format_episode_label(label, episode['season'], episode_num, srts)
+            
     meta=utils.make_info(episode, show)
     meta['images']={}
     meta['images']['poster']=episode['images']['screen']
@@ -870,13 +903,16 @@ def make_episode_item(show, episode, fanart):
     liz=utils.make_list_item(label, meta)
     del meta['images']
     liz.setInfo('video', meta)
+    queries = {'mode': MODES.GET_SOURCES, 'video_type': VIDEO_TYPES.EPISODE, 'title': show['title'], 'year': show['year'], 'season': episode['season'], 'episode': episode_num, 
+               'slug': trakt_api.get_slug(show['url'])}
+    liz_url = _SALTS.build_plugin_url(queries)
     
     menu_items=[]
     menu_items.append(('Show Information', 'XBMC.Action(Info)'), )
     queries = {'mode': MODES.SET_URL_MANUAL, 'video_type': VIDEO_TYPES.EPISODE, 'title': show['title'], 'year': show['year'], 'season': episode['season'], 'episode': episode_num}
     menu_items.append(('Set Related Url (Manual)', 'RunPlugin(%s)' % (_SALTS.build_plugin_url(queries))), )
     liz.addContextMenuItems(menu_items, replaceItems=True)
-    return liz
+    return liz, liz_url
 
 def make_item(section_params, show, menu_items=None):
     if menu_items is None: menu_items=[]
@@ -905,6 +941,12 @@ def make_item(section_params, show, menu_items=None):
         menu_items.append(('Add to List', 'RunPlugin(%s)' % (_SALTS.build_plugin_url(queries))), )
     queries = {'mode': MODES.ADD_TO_LIBRARY, 'video_type': section_params['video_type'], 'title': show['title'], 'year': show['year'], 'slug': slug}
     menu_items.append(('Add to Library', 'RunPlugin(%s)' % (_SALTS.build_plugin_url(queries))), )
+
+    if section_params['section']==SECTIONS.TV and _SALTS.get_setting('enable-subtitles')=='true':
+        queries = {'mode': MODES.EDIT_TVSHOW_ID, 'title': show['title'], 'year': show['year']}
+        runstring = 'RunPlugin(%s)' % _SALTS.build_plugin_url(queries)
+        menu_items.append(('Set Addic7ed TVShowID', runstring,))
+
     queries = {'mode': MODES.SET_URL_SEARCH, 'video_type': section_params['video_type'], 'title': show['title'], 'year': show['year']}
     menu_items.append(('Set Related Url (Search)', 'RunPlugin(%s)' % (_SALTS.build_plugin_url(queries))), )
     queries = {'mode': MODES.SET_URL_MANUAL, 'video_type': section_params['video_type'], 'title': show['title'], 'year': show['year']}

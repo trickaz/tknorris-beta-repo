@@ -17,6 +17,7 @@
 """
 import xbmc
 import xbmcaddon
+import xbmcgui
 from salts_lib import log_utils
 from salts_lib import utils
 from salts_lib.constants import MODES
@@ -27,11 +28,42 @@ log_utils.log('Service: Installed Version: %s' % (ADDON.getAddonInfo('version'))
 
 db_connection = DB_Connection()
 db_connection.init_database()
-player=xbmc.Player()
 
+class Service(xbmc.Player):
+    def __init__(self, *args, **kwargs):
+        log_utils.log('Service: starting...')
+        xbmc.Player.__init__(self, *args, **kwargs)
+        self.win = xbmcgui.Window(10000)
+        self.reset()
+
+    def reset(self):
+        log_utils.log('Service: Resetting...')
+        self.win.clearProperty('salts.playing.srt')
+        self.tracked = False    
+
+    def onPlayBackStarted(self):
+        log_utils.log('Service: Playback started')
+        srt_path = self.win.getProperty('salts.playing.srt')
+        if srt_path: #Playback is ours
+            log_utils.log('Service: tracking progress...')
+            self.tracking = True
+            if srt_path:
+                xbmc.log('1Channel: Service: Enabling subtitles: %s' % (srt_path))
+                self.setSubtitles(srt_path)
+
+    def onPlayBackStopped(self):
+        log_utils.log('Service: Playback Stopped')
+        self.reset()
+
+    def onPlayBackEnded(self):
+        log_utils.log('Service: Playback completed')
+        self.onPlayBackStopped()
+            
+monitor = Service()
 utils.do_startup_task(MODES.UPDATE_SUBS)
+
 while not xbmc.abortRequested:
-    isPlaying = player.isPlaying()
+    isPlaying = monitor.isPlaying()
     utils.do_scheduled_task(MODES.UPDATE_SUBS, isPlaying)
     xbmc.sleep(1000)
 log_utils.log('Service: shutting down...')

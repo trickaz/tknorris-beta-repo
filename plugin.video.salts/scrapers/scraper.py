@@ -23,6 +23,7 @@ from salts_lib import log_utils
 from salts_lib.db_utils import DB_Connection
 from salts_lib.constants import VIDEO_TYPES
 from salts_lib.constants import USER_AGENT
+BASE_URL=''
 
 abstractstaticmethod = abc.abstractmethod
 class abstractclassmethod(classmethod):
@@ -37,6 +38,7 @@ DEFAULT_TIMEOUT=30
 
 class Scraper(object):
     __metaclass__ = abc.ABCMeta
+    base_url=BASE_URL
     
     def __init__(self, timeout=DEFAULT_TIMEOUT):
         self.db_connection = DB_Connection()
@@ -163,6 +165,12 @@ class Scraper(object):
         """
         raise NotImplementedError
 
+    @classmethod
+    def get_settings(cls):
+        name=cls.get_name()
+        return ['         <setting id="%s-enable" type="bool" label="%s Enabled" default="true" visible="true"/>' % (name, name),
+                    '         <setting id="%s-base_url" type="text" label="%s Base Url" default="%s" visible="eq(-1,true)"/>' % (name, name, cls.base_url)]
+    
     def _cached_http_get(self, url, base_url, timeout, cookie=None, data=None, cache_limit=8):
         log_utils.log('Getting Url: %s cookie=|%s| data=|%s|' % (url, cookie, data))
         db_connection=DB_Connection()
