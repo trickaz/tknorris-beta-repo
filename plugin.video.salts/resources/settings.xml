@@ -29,7 +29,7 @@
 	</category>
 	<category label="Source Management">
 		<setting id="disabled_scrapers" type="text" visible="false"/>
-        <setting id="auto-play" type="bool" label="Auto-Play Sources" default="false" enable="false"/>
+        <setting id="auto-play" type="bool" label="Auto-Play Sources" default="false"/>
 		<setting id="source-win" type="labelenum" label="     Source Selection Method" values="Directory|Dialog" default="Dialog"/>
 		<setting id="parallel_mode" type="enum" label="Parallel Mode" values="Threads|Processes|None" default="0"/>
 		<setting id="source_timeout" type="slider" label="Scraper Timeout (seconds) (0=No Limit)" default="5" range="0,120" option="int"/>

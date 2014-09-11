@@ -46,6 +46,8 @@ trakt_api=Trakt_API(username,password, use_https, trakt_timeout)
 url_dispatcher=URL_Dispatcher()
 db_connection=DB_Connection()
 
+global urlresolver
+
 @url_dispatcher.register(MODES.MAIN)
 def main_menu():
     db_connection.init_database()
@@ -348,8 +350,9 @@ def browse_episodes(slug, season, fanart):
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), liz_url, liz,isFolder=folder,totalItems=totalItems)
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
-@url_dispatcher.register(MODES.GET_SOURCES, ['video_type', 'title', 'year', 'slug'], ['season', 'episode', 'dialog'])
-def get_sources(video_type, title, year, slug, season='', episode='', dialog=None):
+@url_dispatcher.register(MODES.GET_SOURCES, ['mode', 'video_type', 'title', 'year', 'slug'], ['season', 'episode', 'dialog'])
+@url_dispatcher.register(MODES.SELECT_SOURCE, ['mode', 'video_type', 'title', 'year', 'slug'], ['season', 'episode'])
+def get_sources(mode, video_type, title, year, slug, season='', episode='', dialog=None):
     timeout = max_timeout = int(_SALTS.get_setting('source_timeout'))
     if max_timeout == 0: timeout=None
     max_results = int(_SALTS.get_setting('source_results'))
@@ -405,15 +408,19 @@ def get_sources(video_type, title, year, slug, season='', episode='', dialog=Non
             SORT_KEYS['source'] = utils.make_source_sort_key()
             hosters.sort(key = utils.get_sort_key)
             
-        if dialog or (dialog is None and _SALTS.get_setting('source-win') == 'Dialog'):
-            stream_url = pick_source_dialog(hosters)
-            return play_source(stream_url, video_type, slug, season, episode)
+        global urlresolver
+        import urlresolver
+        if mode!=MODES.SELECT_SOURCE and _SALTS.get_setting('auto-play')=='true':
+            auto_play_sources(hosters, video_type, slug, season, episode)
         else:
-            pick_source_dir(hosters, video_type, slug, season, episode)
+            if dialog or (dialog is None and _SALTS.get_setting('source-win') == 'Dialog'):
+                stream_url = pick_source_dialog(hosters)
+                return play_source(stream_url, video_type, slug, season, episode)
+            else:
+                pick_source_dir(hosters, video_type, slug, season, episode)
     finally:
         utils.reap_workers(workers, None)
     
-
 @url_dispatcher.register(MODES.RESOLVE_SOURCE, ['class_url', 'video_type', 'slug', 'class_name'], ['season', 'episode'])
 def resolve_source(class_url, video_type, slug, class_name, season='', episode=''):
     for cls in utils.relevant_scrapers(video_type):
@@ -448,9 +455,8 @@ def download_subtitles(language, title, year, season, episode):
     
 def play_source(hoster_url, video_type, slug, season='', episode=''):
     if hoster_url is None:
-        return True
+        return False
 
-    import urlresolver
     stream_url = urlresolver.HostedMediaFile(url=hoster_url).resolve()
     if not stream_url or not isinstance(stream_url, basestring):
         log_utils.log('Url (%s) Resolution failed' % (hoster_url))
@@ -458,14 +464,19 @@ def play_source(hoster_url, video_type, slug, season='', episode=''):
         xbmc.executebuiltin(builtin % (_SALTS.get_name(), hoster_url, ICON_PATH))
         return False
 
-    if video_type == VIDEO_TYPES.EPISODE:
-        details = trakt_api.get_episode_details(slug, season, episode)
-        info = utils.make_info(details['episode'], details['show'])
-        art=utils.make_art(details['episode'], details['show']['images']['fanart'])
-    else:
-        item = trakt_api.get_movie_details(slug)
-        info = utils.make_info(item)
-        art=utils.make_art(item)
+    try:
+        art={'thumb': '', 'fanart': ''}
+        info={}
+        if video_type == VIDEO_TYPES.EPISODE:
+            details = trakt_api.get_episode_details(slug, season, episode)
+            info = utils.make_info(details['episode'], details['show'])
+            art=utils.make_art(details['episode'], details['show']['images']['fanart'])
+        else:
+            item = trakt_api.get_movie_details(slug)
+            info = utils.make_info(item)
+            art=utils.make_art(item)
+    except TransientTraktError as e:
+        log_utils.log('During Playback: %s' % (str(e)), xbmc.LOGWARNING) # just log warning if trakt calls fail and leave meta and art blank
     
     if video_type == VIDEO_TYPES.EPISODE and utils.srt_download_enabled():
         srt_path = download_subtitles(_SALTS.get_setting('subtitle-lang'), details['show']['title'], details['show']['year'], season, episode)
@@ -485,8 +496,18 @@ def play_source(hoster_url, video_type, slug, season='', episode=''):
     
     return True
 
+def auto_play_sources(hosters, video_type, slug, season, episode):
+    for item in hosters:
+        # TODO: Skip multiple sources for now
+        if item['multi-part']:
+            continue
+
+        hoster_url=item['class'].resolve_link(item['url'])
+        log_utils.log('Auto Playing: %s' % (hoster_url), xbmc.LOGDEBUG)
+        if play_source(hoster_url, video_type, slug, season, episode):
+            return True
+
 def pick_source_dialog(hosters, filtered=False):
-    import urlresolver
     for item in hosters:
         # TODO: Skip multiple sources for now
         if item['multi-part']:
@@ -516,7 +537,6 @@ def pick_source_dialog(hosters, filtered=False):
         return None
     
 def pick_source_dir(hosters, video_type, slug, season='', episode='', filtered=False):
-    import urlresolver
     for item in hosters:
         # TODO: Skip multiple sources for now
         if item['multi-part']:
@@ -882,6 +902,7 @@ def make_dir_from_cal(mode, start_date, days):
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
 def make_episode_item(show, episode, fanart, show_subs=True):
+    show['title']=re.sub(' \(\d{4}\)$','',show['title'])
     if 'episode' in episode: episode_num=episode['episode']
     else:  episode_num=episode['number']
     label = '%sx%s %s' % (episode['season'], episode_num, episode['title'])
@@ -908,6 +929,14 @@ def make_episode_item(show, episode, fanart, show_subs=True):
     liz_url = _SALTS.build_plugin_url(queries)
     
     menu_items=[]
+    if _SALTS.get_setting('auto-play')=='true':
+        queries = {'mode': MODES.SELECT_SOURCE, 'video_type': VIDEO_TYPES.EPISODE, 'title': show['title'], 'year': show['year'], 'season': episode['season'], 'episode': episode_num, 'slug': trakt_api.get_slug(show['url'])}
+        if _SALTS.get_setting('source-win')=='Dialog':
+            runstring = 'RunPlugin(%s)' % _SALTS.build_plugin_url(queries)
+        else:
+            runstring = 'Container.Update(%s)' % _SALTS.build_plugin_url(queries)
+        menu_items.append(('Select Source', runstring), )
+        
     menu_items.append(('Show Information', 'XBMC.Action(Info)'), )
     queries = {'mode': MODES.SET_URL_MANUAL, 'video_type': VIDEO_TYPES.EPISODE, 'title': show['title'], 'year': show['year'], 'season': episode['season'], 'episode': episode_num}
     menu_items.append(('Set Related Url (Manual)', 'RunPlugin(%s)' % (_SALTS.build_plugin_url(queries))), )
@@ -916,6 +945,7 @@ def make_episode_item(show, episode, fanart, show_subs=True):
 
 def make_item(section_params, show, menu_items=None):
     if menu_items is None: menu_items=[]
+    show['title']=re.sub(' \(\d{4}\)$','',show['title'])
     label = '%s (%s)' % (show['title'], show['year'])
     liz=utils.make_list_item(label, show)
     slug=trakt_api.get_slug(show['url'])
@@ -934,7 +964,15 @@ def make_item(section_params, show, menu_items=None):
     liz.setInfo('video', info)
     liz_url = _SALTS.build_plugin_url(queries)
  
-    menu_items.insert(0, ('Show Information', 'XBMC.Action(Info)'), )
+    if section_params['next_mode']==MODES.GET_SOURCES and _SALTS.get_setting('auto-play')=='true':
+        queries = {'mode': MODES.SELECT_SOURCE, 'video_type': section_params['video_type'], 'title': show['title'], 'year': show['year'], 'slug': slug}
+        if _SALTS.get_setting('source-win')=='Dialog':
+            runstring = 'RunPlugin(%s)' % _SALTS.build_plugin_url(queries)
+        else:
+            runstring = 'Container.Update(%s)' % _SALTS.build_plugin_url(queries)
+        menu_items.insert(0, ('Select Source', runstring), )
+        
+    menu_items.append(('Show Information', 'XBMC.Action(Info)'), )
     if VALID_ACCOUNT:
         queries = {'mode': MODES.ADD_TO_LIST, 'section': section_params['section']}
         queries.update(utils.show_id(show))

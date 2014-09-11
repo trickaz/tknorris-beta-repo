@@ -1,5 +1,5 @@
 """
-    1Channel XBMC Addon
+    SALTS XBMC Addon
     Copyright (C) 2014 tknorris
 
     This program is free software: you can redistribute it and/or modify

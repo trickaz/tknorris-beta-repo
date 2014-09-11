@@ -46,7 +46,7 @@ class TwoMovies_Scraper(scraper.Scraper):
     
     def resolve_link(self, link):
         url = urlparse.urljoin(self.base_url, link)
-        html = self.__http_get(url, cookie={'links_tos': '1'}, cache_limit=0)
+        html = self.__http_get(url, cookies={'links_tos': '1'}, cache_limit=0)
         match = re.search('<iframe.*?src="([^"]+)', html, re.DOTALL)
         if match:
             return match.group(1)
@@ -116,5 +116,5 @@ class TwoMovies_Scraper(scraper.Scraper):
             url = match.group(1)
             return url.replace(self.base_url, '')
         
-    def __http_get(self, url, cookie=None, cache_limit=8):
-        return super(TwoMovies_Scraper, self)._cached_http_get(url, self.base_url, self.timeout, cache_limit=cache_limit)
+    def __http_get(self, url, cookies=None, cache_limit=8):
+        return super(TwoMovies_Scraper, self)._cached_http_get(url, self.base_url, self.timeout, cookies, cache_limit=cache_limit)

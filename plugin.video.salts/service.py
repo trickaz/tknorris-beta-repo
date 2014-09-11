@@ -48,7 +48,7 @@ class Service(xbmc.Player):
             log_utils.log('Service: tracking progress...')
             self.tracking = True
             if srt_path:
-                xbmc.log('1Channel: Service: Enabling subtitles: %s' % (srt_path))
+                log_utils.log('Service: Enabling subtitles: %s' % (srt_path))
                 self.setSubtitles(srt_path)
 
     def onPlayBackStopped(self):

@@ -140,7 +140,7 @@ class IceFilms_Scraper(scraper.Scraper):
         results=[]
         for match in re.finditer(pattern, html, re.DOTALL):
             url, match_title, match_year = match.groups('')
-            if norm_title == self.__normalize_title(match_title) and (not year or not match_year or year == match_year):
+            if norm_title in self.__normalize_title(match_title) and (not year or not match_year or year == match_year):
                 result={'url': url, 'title': match_title, 'year': match_year}
                 results.append(result)
         return results

@@ -18,12 +18,19 @@
 import abc
 import urllib2
 import urllib
+import urlparse
+import cookielib
 import xbmc
+import xbmcaddon
+import os
 from salts_lib import log_utils
 from salts_lib.db_utils import DB_Connection
 from salts_lib.constants import VIDEO_TYPES
 from salts_lib.constants import USER_AGENT
 BASE_URL=''
+
+COOKIEPATH=xbmc.translatePath(xbmcaddon.Addon().getAddonInfo('profile'))
+COOKIEFILE=os.path.join(COOKIEPATH,'cookies.lwp')
 
 abstractstaticmethod = abc.abstractmethod
 class abstractclassmethod(classmethod):
@@ -169,32 +176,44 @@ class Scraper(object):
     def get_settings(cls):
         name=cls.get_name()
         return ['         <setting id="%s-enable" type="bool" label="%s Enabled" default="true" visible="true"/>' % (name, name),
-                    '         <setting id="%s-base_url" type="text" label="%s Base Url" default="%s" visible="eq(-1,true)"/>' % (name, name, cls.base_url)]
+                    '         <setting id="%s-base_url" type="text" label="     Base Url" default="%s" visible="eq(-1,true)"/>' % (name, cls.base_url)]
     
-    def _cached_http_get(self, url, base_url, timeout, cookie=None, data=None, cache_limit=8):
-        log_utils.log('Getting Url: %s cookie=|%s| data=|%s|' % (url, cookie, data))
+    def _cached_http_get(self, url, base_url, timeout, cookies=None, data=None, cache_limit=8):
+        if cookies is None: cookies={}
+        log_utils.log('Getting Url: %s cookie=|%s| data=|%s|' % (url, cookies, data))
         db_connection=DB_Connection()
         html = db_connection.get_cached_url(url, cache_limit)
         if html:
             log_utils.log('Returning cached result for: %s' % (url), xbmc.LOGDEBUG)
+            return html
         
         try:
+            cj = self._set_cookies(base_url, cookies)
             if data is not None: data=urllib.urlencode(data, True)            
             request = urllib2.Request(url, data=data)
-            if cookie is not None: request.add_header('Cookie', self._make_cookie(cookie)) 
             request.add_header('User-Agent', USER_AGENT)
             request.add_unredirected_header('Host', request.get_host())
             request.add_unredirected_header('Referer', base_url)
             response = urllib2.urlopen(request, timeout=timeout)
+            cj.save(ignore_discard=True)
             html=response.read()
         except Exception as e:
             log_utils.log('Error (%s) during scraper http get: %s' % (str(e), url), xbmc.LOGWARNING)
         
         db_connection.cache_url(url, html)
         return html
-    
-    def _make_cookie(self, cookie):
-        s=''
-        for key in cookie:
-            s += '%s=%s; ' % (key, cookie[key])
-        return s[:-2]
+
+    def _set_cookies(self, base_url, cookies):
+        domain=urlparse.urlparse(base_url).netloc
+        cj=cookielib.LWPCookieJar(COOKIEFILE)
+        opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
+        urllib2.install_opener(opener)
+        for key in cookies:
+            c=cookielib.Cookie(0, key, cookies[key], port=None, port_specified=False, domain=domain, domain_specified=True,
+                                domain_initial_dot=False, path='/', path_specified=True, secure=False, expires=None, discard=False, comment=None, 
+                                comment_url=None, rest={})
+            cj.set_cookie(c)
+        try: cj.load(ignore_discard=True)
+        except: pass
+        return cj
+        

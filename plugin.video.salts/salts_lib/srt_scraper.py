@@ -1,5 +1,5 @@
 """
-    1Channel XBMC Addon
+    SALTS XBMC Addon
     Copyright (C) 2014 tknorris
 
     This program is free software: you can redistribute it and/or modify
@@ -47,7 +47,6 @@ class SRT_Scraper():
     
     def get_tvshow_id(self, title, year=None):
         match_title=title.lower()
-#         tvshow_id=db_connection.get_tvshow_id(title, year)
         rows=db_connection.get_related_url(VIDEO_TYPES.TVSHOW, title, year, SRT_SOURCE)
         if rows:
             tvshow_id=rows[0][0]
@@ -78,7 +77,6 @@ class SRT_Scraper():
         if not site_matches:
             return None
         elif len(site_matches)==1:
-            #db_connection.set_tvshow_id(title, year, site_matches[0][0])
             db_connection.set_related_url(VIDEO_TYPES.TVSHOW, title, year, SRT_SOURCE, site_matches[0][0])
             return site_matches[0][0]
         else:
@@ -87,7 +85,6 @@ class SRT_Scraper():
                 # return the match that has no year specified 
                 if match[2] is None:
                     db_connection.set_related_url(VIDEO_TYPES.TVSHOW, title, year, SRT_SOURCE, match[0])
-                    #db_connection.set_tvshow_id(title, year, match[0])
                     return match[0]
             
     def get_season_subtitles(self, language, tvshow_id, season):

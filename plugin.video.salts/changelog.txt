@@ -1,2 +1,19 @@
-[B]Version 0.1.0[/B]
+[B]Version 0.0.4[/B]
+- Fix show title when it includes year
+- added proper cookie support to standard http get
+- Added istreamhd.org scraper
+- Got auto-play and select souce working
+- actually use cached url responses (duh!)
+- ignore trakt call errors during playback start
+
+[B]Version 0.0.3[/B]
+- Added Friends Episode Activity
+- Fixed sort methods overriding custom labels
+- Added TV Show subtitle scraper (using addic7ed.com)
+- Got dynamic standards setting dialog working for scrapers.
+
+[B]Version 0.0.2[/B]
+- More Work
+
+[B]Version 0.0.1[/B]
 - Initial version
