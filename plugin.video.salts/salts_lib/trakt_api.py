@@ -144,6 +144,10 @@ class Trakt_API():
         url='/search/%s.json/%s?query=%s' % (TRAKT_SECTIONS[section], API_KEY, urllib.quote_plus(query))
         return self.__call_trakt(url)
     
+    def get_collection(self, section):
+        url='/user/library/%s/collection.json/%s/%s' % (TRAKT_SECTIONS[section], API_KEY, self.username)
+        return self.__call_trakt(url)
+    
     def get_slug(self, url):
         show_pattern = 'http[s]*://trakt\.tv/show/'
         movie_pattern = 'http[s]*://trakt\.tv/movie/'

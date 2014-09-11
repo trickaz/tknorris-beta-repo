@@ -102,10 +102,11 @@ def make_info(item, show=''):
     #log_utils.log('Making Info: Item: %s' % (item), xbmc.LOGDEBUG)
     info={}
     info['title']=item['title']
-    info['rating']=int(item['ratings']['percentage'])/10.0
-    info['votes']=item['ratings']['votes']
-    info['plot']=info['plotoutline']=item['overview']
     
+    if 'ratings' in item: 
+        info['rating']=int(item['ratings']['percentage'])/10.0
+        info['votes']=item['ratings']['votes']
+    if 'overview' in item: info['plot']=info['plotoutline']=item['overview']
     if 'runtime' in item: info['duration']=item['runtime']
     if 'imdb_id' in item: info['code']=item['imdb_id']
     if 'certification' in item: info['mpaa']=item['certification']

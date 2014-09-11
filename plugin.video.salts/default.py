@@ -73,6 +73,7 @@ def browse_menu(section):
     section_label='TV Shows' if section==SECTIONS.TV else 'Movies'
     _SALTS.add_directory({'mode': MODES.TRENDING, 'section': section}, {'title': 'Trending %s' % (section_label)})
     if VALID_ACCOUNT: _SALTS.add_directory({'mode': MODES.RECOMMEND, 'section': section}, {'title': 'Recommended %s' % (section_label)})
+    if VALID_ACCOUNT: _SALTS.add_directory({'mode': MODES.SHOW_COLLECTION, 'section': section}, {'title': 'My %s Collection' % (section_label[:-1])})
     if VALID_ACCOUNT: _SALTS.add_directory({'mode': MODES.SHOW_FAVORITES, 'section': section}, {'title': 'My Favorites'})
     if VALID_ACCOUNT: _SALTS.add_directory({'mode': MODES.MANAGE_SUBS, 'section': section}, {'title': 'My Subscriptions'})
     if VALID_ACCOUNT: _SALTS.add_directory({'mode': MODES.SHOW_WATCHLIST, 'section': section}, {'title': 'My Watchlist'})
@@ -252,6 +253,11 @@ def show_list(section, slug, username=None):
 @url_dispatcher.register(MODES.SHOW_WATCHLIST, ['section'])
 def show_watchlist(section):
     show_list(section, utils.WATCHLIST_SLUG)
+
+@url_dispatcher.register(MODES.SHOW_COLLECTION, ['section'])
+def show_collection(section):
+    items = trakt_api.get_collection(section)
+    make_dir_from_list(section, items)
     
 @url_dispatcher.register(MODES.MANAGE_SUBS, ['section'])
 def manage_subscriptions(section):

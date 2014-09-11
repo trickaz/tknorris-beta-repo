@@ -1,3 +1,8 @@
+[B]Version 0.0.5[/B]
+- Fix user/pass checking for istreamhd
+- Add collection browsing
+- fix uflix scraper search results
+
 [B]Version 0.0.4[/B]
 - Fix show title when it includes year
 - added proper cookie support to standard http get
