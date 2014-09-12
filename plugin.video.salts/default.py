@@ -24,6 +24,7 @@ import xbmcplugin
 import xbmcgui
 import xbmc
 import xbmcvfs
+import xbmcaddon
 from addon.common.addon import Addon
 from salts_lib.db_utils import DB_Connection
 from salts_lib.url_dispatcher import URL_Dispatcher
@@ -46,7 +47,18 @@ trakt_api=Trakt_API(username,password, use_https, trakt_timeout)
 url_dispatcher=URL_Dispatcher()
 db_connection=DB_Connection()
 
+THEME_LIST = ['Shine', 'Luna_Blue', 'YYY']
+THEME = THEME_LIST[int(_SALTS.get_setting('theme'))]
+if xbmc.getCondVisibility('System.HasAddon(script.salts.themepak)'):
+    themepak_path = xbmcaddon.Addon('script.salts.themepak').getAddonInfo('path')
+else:
+    themepak_path=_SALTS.get_path()
+THEME_PATH = os.path.join(themepak_path, 'art', 'themes', THEME)
+
 global urlresolver
+
+def art(name): 
+    return os.path.join(THEME_PATH, name)
 
 @url_dispatcher.register(MODES.MAIN)
 def main_menu():
@@ -63,29 +75,36 @@ def main_menu():
     else:
         _SALTS.set_setting('remind_count', '0')
 
-    _SALTS.add_directory({'mode': MODES.BROWSE, 'section': SECTIONS.MOVIES}, {'title': 'Movies'})
-    _SALTS.add_directory({'mode': MODES.BROWSE, 'section': SECTIONS.TV}, {'title': 'TV Shows'})
-    _SALTS.add_directory({'mode': MODES.SCRAPERS}, {'title': 'Scraper Settings'})
+    _SALTS.add_directory({'mode': MODES.BROWSE, 'section': SECTIONS.MOVIES}, {'title': 'Movies'}, img=art('movies.png'))
+    _SALTS.add_directory({'mode': MODES.BROWSE, 'section': SECTIONS.TV}, {'title': 'TV Shows'}, img=art('television.png'))
+    _SALTS.add_directory({'mode': MODES.SCRAPERS}, {'title': 'Scraper Settings'}, img=art('settings.png'))
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
 @url_dispatcher.register(MODES.BROWSE, ['section'])
 def browse_menu(section):
-    section_label='TV Shows' if section==SECTIONS.TV else 'Movies'
-    _SALTS.add_directory({'mode': MODES.TRENDING, 'section': section}, {'title': 'Trending %s' % (section_label)})
-    if VALID_ACCOUNT: _SALTS.add_directory({'mode': MODES.RECOMMEND, 'section': section}, {'title': 'Recommended %s' % (section_label)})
-    if VALID_ACCOUNT: _SALTS.add_directory({'mode': MODES.SHOW_COLLECTION, 'section': section}, {'title': 'My %s Collection' % (section_label[:-1])})
-    if VALID_ACCOUNT: _SALTS.add_directory({'mode': MODES.SHOW_FAVORITES, 'section': section}, {'title': 'My Favorites'})
-    if VALID_ACCOUNT: _SALTS.add_directory({'mode': MODES.MANAGE_SUBS, 'section': section}, {'title': 'My Subscriptions'})
-    if VALID_ACCOUNT: _SALTS.add_directory({'mode': MODES.SHOW_WATCHLIST, 'section': section}, {'title': 'My Watchlist'})
-    if VALID_ACCOUNT: _SALTS.add_directory({'mode': MODES.MY_LISTS, 'section': section}, {'title': 'My Lists'})
-    _SALTS.add_directory({'mode': MODES.OTHER_LISTS, 'section': section}, {'title': 'Other Lists'})
     if section==SECTIONS.TV:
-        if VALID_ACCOUNT: _SALTS.add_directory({'mode': MODES.MY_CAL}, {'title': 'My Calendar'})
-        _SALTS.add_directory({'mode': MODES.CAL}, {'title': 'General Calendar'})
-        _SALTS.add_directory({'mode': MODES.PREMIERES}, {'title': 'Premiere Calendar'})
-        if VALID_ACCOUNT: _SALTS.add_directory({'mode': MODES.FRIENDS_EPISODE, 'section': section}, {'title': 'Friends Episode Activity'})
-    if VALID_ACCOUNT: _SALTS.add_directory({'mode': MODES.FRIENDS, 'section': section}, {'title': 'Friends Activity'})
-    _SALTS.add_directory({'mode': MODES.SEARCH, 'section': section}, {'title': 'Search'})
+        section_label='TV Shows'
+        search_img='television_search.png'
+    else:
+        section_label='Movies'
+        search_img='movies_search.png'
+
+    _SALTS.add_directory({'mode': MODES.TRENDING, 'section': section}, {'title': 'Trending %s' % (section_label)}, img=art('trending.png'))
+    if VALID_ACCOUNT: _SALTS.add_directory({'mode': MODES.RECOMMEND, 'section': section}, {'title': 'Recommended %s' % (section_label)}, img=art('recommended.png'))
+    if VALID_ACCOUNT: _SALTS.add_directory({'mode': MODES.SHOW_COLLECTION, 'section': section}, {'title': 'My %s Collection' % (section_label[:-1])}, img=art('collection.png'))
+    if VALID_ACCOUNT: _SALTS.add_directory({'mode': MODES.SHOW_FAVORITES, 'section': section}, {'title': 'My Favorites'}, img=art('my_favorites.png'))
+    if VALID_ACCOUNT: _SALTS.add_directory({'mode': MODES.MANAGE_SUBS, 'section': section}, {'title': 'My Subscriptions'}, img=art('my_subscriptions.png'))
+    if VALID_ACCOUNT: _SALTS.add_directory({'mode': MODES.SHOW_WATCHLIST, 'section': section}, {'title': 'My Watchlist'}, img=art('my_watchlist.png'))
+    if VALID_ACCOUNT: _SALTS.add_directory({'mode': MODES.MY_LISTS, 'section': section}, {'title': 'My Lists'}, img=art('my_lists.png'))
+    _SALTS.add_directory({'mode': MODES.OTHER_LISTS, 'section': section}, {'title': 'Other Lists'}, img=art('other_lists.png'))
+    if section==SECTIONS.TV:
+        if VALID_ACCOUNT: _SALTS.add_directory({'mode': MODES.MY_CAL}, {'title': 'My Calendar'}, img=art('my_calendar.png'))
+        _SALTS.add_directory({'mode': MODES.CAL}, {'title': 'General Calendar'}, img=art('calendar.png'))
+        _SALTS.add_directory({'mode': MODES.PREMIERES}, {'title': 'Premiere Calendar'}, img=art('premiere_calendar.png'))
+        if VALID_ACCOUNT: _SALTS.add_directory({'mode': MODES.FRIENDS_EPISODE, 'section': section}, {'title': 'Friends Episode Activity'}, img=art('friends_episode.png'))
+
+    if VALID_ACCOUNT: _SALTS.add_directory({'mode': MODES.FRIENDS, 'section': section}, {'title': 'Friends Activity'}, img=art('friends.png'))
+    _SALTS.add_directory({'mode': MODES.SEARCH, 'section': section}, {'title': 'Search'}, img=art(search_img))
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
 @url_dispatcher.register(MODES.SCRAPERS)
@@ -98,7 +117,7 @@ def scraper_settings():
             toggle_label='Enable Scraper'
         else:
             toggle_label='Disable Scraper'
-        liz = xbmcgui.ListItem(label=label)
+        liz = xbmcgui.ListItem(label=label, iconImage=art('scraper.png'), thumbnailImage=art('scraper.png'))
         liz.setProperty('IsPlayable', 'false')
         liz.setInfo('video', {'title': label})
         liz_url = _SALTS.build_plugin_url({'mode': MODES.TOGGLE_SCRAPER, 'name': cls.get_name()})
@@ -204,7 +223,7 @@ def browse_lists(section):
     lists.insert(0, {'name': 'watchlist', 'slug': utils.WATCHLIST_SLUG})
     totalItems=len(lists)
     for user_list in lists:
-        liz = xbmcgui.ListItem(label=user_list['name'])
+        liz = xbmcgui.ListItem(label=user_list['name'], iconImage=art('list.png'), thumbnailImage=art('list.png'))
         queries = {'mode': MODES.SHOW_LIST, 'section': section, 'slug': user_list['slug']}
         liz_url = _SALTS.build_plugin_url(queries)
         
@@ -220,14 +239,14 @@ def browse_lists(section):
 
 @url_dispatcher.register(MODES.OTHER_LISTS, ['section'])
 def browse_other_lists(section):
-    liz = xbmcgui.ListItem(label='Add another user\'s list')
+    liz = xbmcgui.ListItem(label='Add another user\'s list', iconImage=art('add_other.png'), thumbnailImage=art('add_other.png'))
     liz_url = _SALTS.build_plugin_url({'mode': MODES.ADD_OTHER_LIST, 'section': section})
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), liz_url, liz, isFolder=False)    
     
     lists = db_connection.get_other_lists(section)
     for other_list in lists:
         header, _ = trakt_api.show_list(other_list[1], section, other_list[0])
-        _SALTS.add_directory({'mode': MODES.SHOW_LIST, 'section': section, 'slug': other_list[1], 'username': other_list[0]}, {'title': header['name']})
+        _SALTS.add_directory({'mode': MODES.SHOW_LIST, 'section': section, 'slug': other_list[1], 'username': other_list[0]}, {'title': header['name']}, img=art('list.png'))
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
     
 @url_dispatcher.register(MODES.ADD_OTHER_LIST, ['section'])
@@ -264,11 +283,12 @@ def manage_subscriptions(section):
     slug=_SALTS.get_setting('%s_sub_slug' % (section))
     if slug:
         next_run = utils.get_next_run(MODES.UPDATE_SUBS)
-        liz = xbmcgui.ListItem(label='Update Subscriptions: (Next Run: [COLOR green]%s[/COLOR])' % (next_run.strftime("%Y-%m-%d %H:%M:%S.%f")))
+        liz = xbmcgui.ListItem(label='Update Subscriptions: (Next Run: [COLOR green]%s[/COLOR])' % (next_run.strftime("%Y-%m-%d %H:%M:%S.%f")),
+                               iconImage=art('update_subscriptions.png'), thumbnailImage=art('update_subscriptions.png'))
         liz_url = _SALTS.build_plugin_url({'mode': MODES.UPDATE_SUBS, 'section': section})
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), liz_url, liz, isFolder=False)    
         if section == SECTIONS.TV:
-            liz = xbmcgui.ListItem(label='Clean-Up Subscriptions')
+            liz = xbmcgui.ListItem(label='Clean-Up Subscriptions', iconImage=art('clean_up.png'), thumbnailImage=art('clean_up.png'))
             liz_url = _SALTS.build_plugin_url({'mode': MODES.CLEAN_SUBS})
             xbmcplugin.addDirectoryItem(int(sys.argv[1]), liz_url, liz, isFolder=False)    
     show_pickable_list(slug, 'Pick a list to use for Subscriptions', MODES.PICK_SUB_LIST, section)
@@ -882,7 +902,7 @@ def make_dir_from_cal(mode, start_date, days):
     last_week = datetime.datetime.strftime(last_week, '%Y%m%d')
     next_week = datetime.datetime.strftime(next_week, '%Y%m%d')
     
-    liz = xbmcgui.ListItem(label='<< Previous Week')
+    liz = xbmcgui.ListItem(label='<< Previous Week', iconImage=art('previous.png'), thumbnailImage=art('previous.png'))
     liz_url = _SALTS.build_plugin_url({'mode': mode, 'start_date': last_week})
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), liz_url, liz, isFolder=True)
     
@@ -902,7 +922,7 @@ def make_dir_from_cal(mode, start_date, days):
             liz.setProperty('isPlayable', 'true')
             xbmcplugin.addDirectoryItem(int(sys.argv[1]), liz_url, liz,isFolder=False,totalItems=totalItems)
 
-    liz = xbmcgui.ListItem(label='Next Week >>')
+    liz = xbmcgui.ListItem(label='Next Week >>', iconImage=art('next.png'), thumbnailImage=art('next.png'))
     liz_url = _SALTS.build_plugin_url({'mode': mode, 'start_date': next_week})
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), liz_url, liz, isFolder=True)    
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
@@ -926,7 +946,6 @@ def make_episode_item(show, episode, fanart, show_subs=True):
     meta['images']={}
     meta['images']['poster']=episode['images']['screen']
     meta['images']['fanart']=fanart
-    if 'watched' in episode and episode['watched']: meta['playcount']=1
     liz=utils.make_list_item(label, meta)
     del meta['images']
     liz.setInfo('video', meta)
@@ -959,6 +978,11 @@ def make_item(section_params, show, menu_items=None):
     info = utils.make_info(show)
     if not section_params['folder']:
         liz.setProperty('IsPlayable', 'true')
+    
+    if 'TotalEpisodes' in info:
+        liz.setProperty('TotalEpisodes', str(info['TotalEpisodes']))
+        liz.setProperty('WatchedEpisodes', str(info['WatchedEpisodes']))
+        liz.setProperty('UnWatchedEpisodes', str(info['UnWatchedEpisodes']))
  
     if section_params['section']==SECTIONS.TV:
         queries = {'mode': section_params['next_mode'], 'slug': slug, 'fanart': liz.getProperty('fanart_image')}

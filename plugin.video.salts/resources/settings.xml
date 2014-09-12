@@ -11,6 +11,7 @@
 	    <setting id="TV_fav_slug" type="text" visible="false"/>
 	    <setting id="Movies_fav_slug" type="text" visible="false"/>
 	    <setting id="remind_count" type="number" default="0" visible="false"/>
+	    <setting id="theme" type="enum" label="Addon Theme" values="Shine|Luna Blue" default="0"/>
     </category>
     <category label="Library Integration">
 	    <setting id="tvshow-folder" type="folder" label="TV Show Folder"

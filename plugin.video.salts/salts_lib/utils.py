@@ -6,7 +6,7 @@ import xbmcgui
 import xbmcplugin
 import log_utils
 import sys
-import md5
+import hashlib
 from constants import *
 from scrapers import * # import all scrapers into this namespace
 from addon.common.addon import Addon
@@ -120,7 +120,20 @@ def make_info(item, show=''):
     if 'released' in item: info['premiered']=time.strftime('%Y-%m-%d', time.localtime(item['released']))
     if 'status' in item: info['status']=item['status']
     if 'tagline' in item: info['tagline']=item['tagline']
+    if 'watched' in item and item['watched']: info['playcount']=1
     if 'plays' in item and item['plays']: info['playcount']=item['plays']
+
+    if 'seasons' in item:
+        total_episodes=0
+        for season in item['seasons']:
+            total_episodes += len(season['episodes'])
+        info['episode']=info['TotalEpisodes']=info['WatchedEpisodes']=total_episodes
+        info['UnWatchedEpisodes']=0
+
+    if 'trailer' in item:
+        match=re.search('\?v=(.*)', item['trailer'])
+        if match:
+            info['trailer']='plugin://plugin.video.youtube/?action=play_video&videoid=%s' % (match.group(1)) 
 
     # override item params with show info if it exists
     if 'certification' in show: info['mpaa']=show['certification']
@@ -380,7 +393,7 @@ def valid_account():
     username=ADDON.get_setting('username')
     password=ADDON.get_setting('password')
     last_hash=ADDON.get_setting('last_hash')
-    cur_hash = md5.new(username+password).hexdigest()
+    cur_hash = hashlib.md5(username+password).hexdigest()
     if cur_hash != last_hash:
         try:
             valid_account=trakt_api.valid_account()

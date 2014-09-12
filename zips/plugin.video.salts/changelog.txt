@@ -1,3 +1,9 @@
+[B]Version 0.0.6[/B]
+- Added total/watched/unwatched episode count when available (collections)
+- Added temporary dryicon.com themes
+- Fixed crash on python versions older than 2.7
+- Fixed warning for using old hash libs
+
 [B]Version 0.0.5[/B]
 - Fix user/pass checking for istreamhd
 - Add collection browsing

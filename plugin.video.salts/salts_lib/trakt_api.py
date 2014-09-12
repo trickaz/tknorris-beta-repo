@@ -18,7 +18,7 @@
 import json
 import urllib2
 import urllib
-import sha
+import hashlib
 import re
 import socket
 import ssl
@@ -41,7 +41,7 @@ API_KEY='db2aa092680518505621a5ddc007611c'
 class Trakt_API():
     def __init__(self, username, password, use_https=False, timeout=5):
         self.username=username
-        self.sha1password=sha.new(password).hexdigest()
+        self.sha1password=hashlib.sha1(password).hexdigest()
         self.protocol='https://' if use_https else 'http://'
         self.timeout=timeout
         
@@ -149,10 +149,8 @@ class Trakt_API():
         return self.__call_trakt(url)
     
     def get_slug(self, url):
-        show_pattern = 'http[s]*://trakt\.tv/show/'
-        movie_pattern = 'http[s]*://trakt\.tv/movie/'
-        url=re.sub(show_pattern, '', url, flags=re.I)
-        url=re.sub(movie_pattern, '', url, flags=re.I)
+        pattern = 'https?://trakt\.tv/(?:show|movie)/'
+        url=re.sub(pattern, '', url.lower())
         return url
     
     def __manage_list(self, action, slug, item):
