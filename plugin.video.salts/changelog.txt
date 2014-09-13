@@ -1,3 +1,8 @@
+[B]Version 0.0.7[/B]
+- Improve handling of PW Scraper with site is offline
+- workaround a bug in windows localtime where shows before 1970 were throwing an error
+- fix add_to_list to pick right show_id
+ 
 [B]Version 0.0.6[/B]
 - Added total/watched/unwatched episode count when available (collections)
 - Added temporary dryicon.com themes

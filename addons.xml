@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addons>
 <!--suppress ALL -->
-<addon id="plugin.video.salts" version="0.0.6" name="Stream All The Sources" provider-name="tknorris">
+<addon id="plugin.video.salts" version="0.0.7" name="Stream All The Sources" provider-name="tknorris">
     <requires>
         <import addon="xbmc.python" version="2.1.0"/>
         <import addon="script.module.urlresolver" version="2.2.0"/>

@@ -46,13 +46,13 @@ def choose_list(username=None):
 
 def show_id(show):
     queries={}
-    if 'imdb_id' in show:
+    if 'imdb_id' in show and show['imdb_id']:
         queries['id_type']='imdb_id'
         queries['show_id']=show['imdb_id']
-    elif 'tvdb_id' in show:
+    elif 'tvdb_id' in show and show['tvdb_id']:
         queries['id_type']='tvdb_id'
         queries['show_id']=show['tvdb_id']
-    elif 'tmdb_id' in show:
+    elif 'tmdb_id' in show and show['tmdb_id']:
         queries['id_type']='tmdb_id'
         queries['show_id']=show['tmdb_id']
     return queries
@@ -98,8 +98,8 @@ def make_art(show, fanart=''):
     return art
 
 def make_info(item, show=''):
-    #log_utils.log('Making Info: Show: %s' % (show), xbmc.LOGDEBUG)
-    #log_utils.log('Making Info: Item: %s' % (item), xbmc.LOGDEBUG)
+    log_utils.log('Making Info: Show: %s' % (show), xbmc.LOGDEBUG)
+    log_utils.log('Making Info: Item: %s' % (item), xbmc.LOGDEBUG)
     info={}
     info['title']=item['title']
     
@@ -116,8 +116,19 @@ def make_info(item, show=''):
     if 'number' in item: info['episode']=item['number']
     if 'genres' in item: info['genre']=', '.join(item['genres'])
     if 'network' in item: info['studio']=item['network']
-    if 'first_aired' in item: info['aired']=info['premiered']=time.strftime('%Y-%m-%d', time.localtime(item['first_aired']))
-    if 'released' in item: info['premiered']=time.strftime('%Y-%m-%d', time.localtime(item['released']))
+    
+    try:
+        if 'first_aired' in item: info['aired']=info['premiered']=time.strftime('%Y-%m-%d', time.localtime(item['first_aired']))
+    except ValueError: # windows throws a ValueError on negative values to localtime  
+        d=datetime.datetime.fromtimestamp(0) + datetime.timedelta(seconds=item['first_aired'])
+        info['aired']=info['premiered']=d.strftime('%Y-%m-%d')
+        
+    try:
+        if 'released' in item: info['premiered']=time.strftime('%Y-%m-%d', time.localtime(item['released']))
+    except ValueError: # windows throws a ValueError on negative values to localtime
+        d=datetime.datetime.fromtimestamp(0) + datetime.timedelta(seconds=item['released'])
+        info['premiered']=d.strftime('%Y-%m-%d')
+         
     if 'status' in item: info['status']=item['status']
     if 'tagline' in item: info['tagline']=item['tagline']
     if 'watched' in item and item['watched']: info['playcount']=1

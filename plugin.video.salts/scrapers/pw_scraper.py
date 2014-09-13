@@ -20,6 +20,7 @@ import re
 import urllib
 import urlparse
 import xbmcaddon
+import xbmc
 from salts_lib.db_utils import DB_Connection
 from salts_lib import log_utils
 from salts_lib.constants import VIDEO_TYPES
@@ -105,20 +106,24 @@ class PW_Scraper(scraper.Scraper):
         else:
             search_url += '&search_section=1'
             
-        html = self. __http_get(self.base_url, cache_limit=0)
-        r = re.search('input type="hidden" name="key" value="([0-9a-f]*)"', html).group(1)
-        search_url += '&key=' + r
-        
-        html = self.__http_get(search_url, cache_limit=.25)
-        pattern = r'class="index_item.+?href="(.+?)" title="Watch (.+?)"?\(?([0-9]{4})?\)?"?>'
         results=[]
-        for match in re.finditer(pattern, html):
-            result={}
-            url, title, year = match.groups('')
-            result['url']=url
-            result['title']=title
-            result['year']=year
-            results.append(result)
+        html = self. __http_get(self.base_url, cache_limit=0)
+        match = re.search('input type="hidden" name="key" value="([0-9a-f]*)"', html)
+        if match:
+            key=match.group(1)
+            search_url += '&key=' + key
+            
+            html = self.__http_get(search_url, cache_limit=.25)
+            pattern = r'class="index_item.+?href="(.+?)" title="Watch (.+?)"?\(?([0-9]{4})?\)?"?>'
+            for match in re.finditer(pattern, html):
+                result={}
+                url, title, year = match.groups('')
+                result['url']=url
+                result['title']=title
+                result['year']=year
+                results.append(result)
+        else:
+            log_utils.log('Unable to locate PW search key', xbmc.LOGWARNING)
         return results
     
     def _get_episode_url(self, show_url, season, episode):

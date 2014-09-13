@@ -183,7 +183,7 @@ class Trakt_API():
             if 'status' in response and response['status']=='failure':
                 raise TraktError(response['message'])
             else:
-                #log_utils.log('Trakt Response: %s' % (response), xbmc.LOGDEBUG)
+                log_utils.log('Trakt Response: %s' % (response), xbmc.LOGDEBUG)
                 return response
 
         except ssl.SSLError as e:
