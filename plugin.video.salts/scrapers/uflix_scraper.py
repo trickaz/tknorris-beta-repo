@@ -45,15 +45,7 @@ class UFlix_Scraper(scraper.Scraper):
         return 'UFlix.org'
     
     def resolve_link(self, link):
-        url = urlparse.urljoin(self.base_url, link)
-        html = self.__http_get(url, cache_limit=0)
-        match = re.search('iframe\s+src="(.*?)"', html)
-        if match:
-            return match.group(1)
-        else:
-            match = re.search('var\s+url\s+=\s+\'(.*?)\'', html)
-            if match:
-                return match.group(1)
+        return link
     
     def format_source_label(self, item):
         return '[%s] %s (%s Up, %s Down) (%s/100)' % (item['quality'], item['host'], item['up'], item['down'], item['rating'])
@@ -70,9 +62,14 @@ class UFlix_Scraper(scraper.Scraper):
             if match:
                 quality = QUALITY_MAP.get(match.group(1).upper())
                 
-            pattern='class="btn btn-primary".*?href="(.*?)".*?\?domain=[^>]+>\s*(.*?)</.*?class="fa fa-thumbs-o-up">\s*\((\d+)\).*?\((\d+)\)\s*<i class="fa fa-thumbs-o-down'
+            pattern='class="btn btn-primary".*?href="([^"]+).*?[^>]+> ([^<]+).*?fa-thumbs-o-up">\s+\((\d+)\).*?\((\d+)\)\s+<i class="fa fa-thumbs-o-down'
             for match in re.finditer(pattern, html, re.DOTALL | re.I):
-                url, host,up,down = match.groups()
+                url, host, up,down = match.groups()
+                match = re.search('url=([^&]+)&domain=([^&]+)', url)
+                if match:
+                    url=match.group(1).decode('base-64')
+                    host=match.group(2).decode('base-64')
+                    
                 # skip ad match
                 if host.upper()=='HDSTREAM':
                     continue
@@ -80,8 +77,8 @@ class UFlix_Scraper(scraper.Scraper):
                 up=int(up)
                 down=int(down)
                 source = {'multi-part': False}
-                source['url']=url.replace(self.base_url,'')
-                source['host']=host.replace('<span>','').replace('</span>','')
+                source['url']=url
+                source['host']=host
                 source['class']=self
                 source['quality']=quality
                 source['up']=up

@@ -1,3 +1,11 @@
+[B]Version 0.0.8[/B]
+- Added movieshd.co scraper
+- Fixed uflix.org scraper (Site keeps making changes!)
+- Added Next Episodes view
+- Added Play Trailer context menu
+- Added in csv db export/import
+- Added in db version migration code
+
 [B]Version 0.0.7[/B]
 - Improve handling of PW Scraper with site is offline
 - workaround a bug in windows localtime where shows before 1970 were throwing an error

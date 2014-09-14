@@ -78,7 +78,7 @@ def main_menu():
     _SALTS.add_directory({'mode': MODES.BROWSE, 'section': SECTIONS.MOVIES}, {'title': 'Movies'}, img=art('movies.png'))
     _SALTS.add_directory({'mode': MODES.BROWSE, 'section': SECTIONS.TV}, {'title': 'TV Shows'}, img=art('television.png'))
     _SALTS.add_directory({'mode': MODES.SCRAPERS}, {'title': 'Scraper Settings'}, img=art('settings.png'))
-    xbmcplugin.endOfDirectory(int(sys.argv[1]))
+    xbmcplugin.endOfDirectory(int(sys.argv[1]), cacheToDisc=False)
 
 @url_dispatcher.register(MODES.BROWSE, ['section'])
 def browse_menu(section):
@@ -98,6 +98,7 @@ def browse_menu(section):
     if VALID_ACCOUNT: _SALTS.add_directory({'mode': MODES.MY_LISTS, 'section': section}, {'title': 'My Lists'}, img=art('my_lists.png'))
     _SALTS.add_directory({'mode': MODES.OTHER_LISTS, 'section': section}, {'title': 'Other Lists'}, img=art('other_lists.png'))
     if section==SECTIONS.TV:
+        if VALID_ACCOUNT: _SALTS.add_directory({'mode': MODES.SHOW_PROGRESS}, {'title': 'My Next Episodes'}, img=art('my_progress.png'))
         if VALID_ACCOUNT: _SALTS.add_directory({'mode': MODES.MY_CAL}, {'title': 'My Calendar'}, img=art('my_calendar.png'))
         _SALTS.add_directory({'mode': MODES.CAL}, {'title': 'General Calendar'}, img=art('calendar.png'))
         _SALTS.add_directory({'mode': MODES.PREMIERES}, {'title': 'Premiere Calendar'}, img=art('premiere_calendar.png'))
@@ -244,10 +245,36 @@ def browse_other_lists(section):
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), liz_url, liz, isFolder=False)    
     
     lists = db_connection.get_other_lists(section)
+    totalItems=len(lists)
     for other_list in lists:
         header, _ = trakt_api.show_list(other_list[1], section, other_list[0])
-        _SALTS.add_directory({'mode': MODES.SHOW_LIST, 'section': section, 'slug': other_list[1], 'username': other_list[0]}, {'title': header['name']}, img=art('list.png'))
+        if other_list[2]:
+            name=other_list[2]
+        else:
+            name=header['name']
+
+        liz = xbmcgui.ListItem(label=name, iconImage=art('list.png'), thumbnailImage=art('list.png'))
+        queries = {'mode': MODES.SHOW_LIST, 'section': section, 'slug': other_list[1], 'username': other_list[0]}
+        liz_url = _SALTS.build_plugin_url(queries)
+        
+        menu_items=[]
+        queries={'mode': MODES.RENAME_LIST, 'section': section, 'slug': other_list[1], 'username': other_list[0], 'name': name}
+        menu_items.append(('Rename List', 'RunPlugin(%s)' % (_SALTS.build_plugin_url(queries))), )
+        liz.addContextMenuItems(menu_items, replaceItems=True)
+
+        xbmcplugin.addDirectoryItem(int(sys.argv[1]), liz_url, liz,isFolder=True,totalItems=totalItems)
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
+    
+@url_dispatcher.register(MODES.RENAME_LIST, ['section', 'slug', 'username', 'name'])
+def rename_list(section, slug, username, name):
+    keyboard = xbmc.Keyboard()
+    keyboard.setHeading('Enter the new name (blank to reset)')
+    keyboard.setDefault(name)
+    keyboard.doModal()
+    if keyboard.isConfirmed():
+        new_name=keyboard.getText()
+        db_connection.rename_other_list(section, username, slug, new_name)
+    xbmc.executebuiltin("XBMC.Container.Refresh")
     
 @url_dispatcher.register(MODES.ADD_OTHER_LIST, ['section'])
 def add_other_list(section):
@@ -277,6 +304,28 @@ def show_watchlist(section):
 def show_collection(section):
     items = trakt_api.get_collection(section)
     make_dir_from_list(section, items)
+    
+@url_dispatcher.register(MODES.SHOW_PROGRESS)
+def show_progress():
+    sort_index =_SALTS.get_setting('sort_progress')
+    items = trakt_api.get_progress(SORT_MAP[int(sort_index)])
+    for item in items:
+        if 'next_episode' in item and item['next_episode']:
+            if _SALTS.get_setting('show_unaired')=='true' or item['next_episode']['first_aired']<=time.time():
+                show=item['show']
+                fanart=item['show']['images']['fanart']
+                date=utils.make_day(time.strftime('%Y-%m-%d', time.localtime(item['next_episode']['first_aired'])))                
+                liz, liz_url = make_episode_item(show, item['next_episode'], fanart)
+                folder=_SALTS.get_setting('source-win')=='Directory'
+                label=liz.getLabel()
+                label = '[[COLOR deeppink]%s[/COLOR]] %s - %s' % (date, show['title'], label.decode('utf-8', 'replace'))
+                liz.setLabel(label) 
+
+                if not folder:
+                    liz.setProperty('IsPlayable', 'true')
+    
+                xbmcplugin.addDirectoryItem(int(sys.argv[1]), liz_url, liz,isFolder=folder)        
+    xbmcplugin.endOfDirectory(int(sys.argv[1]))
     
 @url_dispatcher.register(MODES.MANAGE_SUBS, ['section'])
 def manage_subscriptions(section):
@@ -460,6 +509,11 @@ def resolve_source(class_url, video_type, slug, class_name, season='', episode='
     hoster_url = scraper_instance.resolve_link(class_url)
     return play_source(hoster_url, video_type, slug, season, episode)
 
+@url_dispatcher.register(MODES.PLAY_TRAILER,['stream_url'])
+def play_trailer(stream_url):
+    print stream_url
+    xbmc.Player().play(stream_url)
+
 def download_subtitles(language, title, year, season, episode):
     srt_scraper=SRT_Scraper()
     tvshow_id=srt_scraper.get_tvshow_id(title, year)
@@ -480,6 +534,9 @@ def download_subtitles(language, title, year, season, episode):
         return srt_scraper.download_subtitle(subs[index]['url'])
     
 def play_source(hoster_url, video_type, slug, season='', episode=''):
+    global urlresolver
+    import urlresolver
+
     if hoster_url is None:
         return False
 
@@ -803,6 +860,42 @@ def reset_db():
     builtin = "XBMC.Notification(PrimeWire,%s,2000, %s)" % (message, ICON_PATH)
     xbmc.executebuiltin(builtin)        
 
+@url_dispatcher.register(MODES.EXPORT_DB)
+def export_db():
+    try:
+        dialog = xbmcgui.Dialog()
+        export_path = dialog.browse(0, 'Select Export Directory', 'files')
+        if export_path:
+            export_path = xbmc.translatePath(export_path)
+            keyboard = xbmc.Keyboard('export.csv', 'Enter Export Filename')
+            keyboard.doModal()
+            if keyboard.isConfirmed():
+                export_filename = keyboard.getText()
+                export_file = export_path + export_filename
+                db_connection.export_from_db(export_file)
+                builtin = "XBMC.Notification(Export Successful,Exported to %s,2000, %s)" % (export_file, ICON_PATH)
+                xbmc.executebuiltin(builtin)
+    except Exception as e:
+        log_utils.log('Export Failed: %s' % (e), xbmc.LOGERROR)
+        builtin = "XBMC.Notification(Export,Export Failed,2000, %s)" % (ICON_PATH)
+        xbmc.executebuiltin(builtin)
+
+@url_dispatcher.register(MODES.IMPORT_DB)
+def import_db():
+    try:
+        dialog = xbmcgui.Dialog()
+        import_file = dialog.browse(1, 'Select Import File', 'files')
+        if import_file:
+            import_file = xbmc.translatePath(import_file)
+            db_connection.import_into_db(import_file)
+            builtin = "XBMC.Notification(Import Success,Imported from %s,5000, %s)" % (import_file, ICON_PATH)
+            xbmc.executebuiltin(builtin)
+    except Exception as e:
+        log_utils.log('Import Failed: %s' % (e), xbmc.LOGERROR)
+        builtin = "XBMC.Notification(Import,Import Failed,2000, %s)" % (ICON_PATH)
+        xbmc.executebuiltin(builtin)
+        raise
+
 @url_dispatcher.register(MODES.ADD_TO_LIBRARY, ['video_type', 'title', 'year', 'slug'])
 def add_to_library(video_type, title, year, slug, require_source=False):
     log_utils.log('Creating .strm for |%s|%s|%s|%s|' % (video_type, title, year, slug), xbmc.LOGDEBUG)
@@ -928,6 +1021,7 @@ def make_dir_from_cal(mode, start_date, days):
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
 def make_episode_item(show, episode, fanart, show_subs=True):
+    log_utils.log('Make Episode: Show: %s, Episode: %s, Fanart: %s, Show Subs: %s' % (show, episode, fanart, show_subs))
     show['title']=re.sub(' \(\d{4}\)$','',show['title'])
     if 'episode' in episode: episode_num=episode['episode']
     else:  episode_num=episode['number']
@@ -1010,6 +1104,10 @@ def make_item(section_params, show, menu_items=None):
     queries = {'mode': MODES.ADD_TO_LIBRARY, 'video_type': section_params['video_type'], 'title': show['title'], 'year': show['year'], 'slug': slug}
     menu_items.append(('Add to Library', 'RunPlugin(%s)' % (_SALTS.build_plugin_url(queries))), )
 
+    if 'trailer' in info:
+        queries = {'mode': MODES.PLAY_TRAILER, 'stream_url': info['trailer']}
+        menu_items.append(('Play Trailer', 'RunPlugin(%s)' % (_SALTS.build_plugin_url(queries))), )
+        
     if section_params['section']==SECTIONS.TV and _SALTS.get_setting('enable-subtitles')=='true':
         queries = {'mode': MODES.EDIT_TVSHOW_ID, 'title': show['title'], 'year': show['year']}
         runstring = 'RunPlugin(%s)' % _SALTS.build_plugin_url(queries)

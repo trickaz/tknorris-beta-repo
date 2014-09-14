@@ -17,6 +17,7 @@
 """
 import json
 import urllib2
+from urllib2 import HTTPError
 import urllib
 import hashlib
 import re
@@ -28,6 +29,7 @@ from db_utils import DB_Connection
 from constants import TRAKT_SECTIONS
 from constants import TEMP_ERRORS
 from constants import SECTIONS
+from constants import TRAKT_SORT
 
 class TraktError(Exception):
     pass
@@ -148,6 +150,10 @@ class Trakt_API():
         url='/user/library/%s/collection.json/%s/%s' % (TRAKT_SECTIONS[section], API_KEY, self.username)
         return self.__call_trakt(url)
     
+    def get_progress(self, sort=TRAKT_SORT.ACTIVITY):
+        url='/user/progress/watched.json/%s/%s/all/%s/normal' % (API_KEY, self.username, sort)
+        return self.__call_trakt(url)
+    
     def get_slug(self, url):
         pattern = 'https?://trakt\.tv/(?:show|movie)/'
         url=re.sub(pattern, '', url.lower())
@@ -194,6 +200,8 @@ class Trakt_API():
             # if it's a temporary code, retry
             if e.code in TEMP_ERRORS:
                 raise TransientTraktError('Temporary Trakt Error: '+str(e))
+            elif e.code == 404:
+                return
             else:
                 raise
         except Exception as e:

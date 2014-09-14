@@ -17,8 +17,10 @@
 """
 import os
 import time
+import csv
 import xbmc
 import xbmcvfs
+import xbmcgui
 from addon.common.addon import Addon
 import log_utils
 
@@ -26,6 +28,7 @@ def enum(**enums):
     return type('Enum', (), enums)
 
 DB_TYPES= enum(MYSQL='mysql', SQLITE='sqlite')
+CSV_MARKERS = enum(REL_URL='***REL_URL***', OTHER_LISTS='***OTHER_LISTS***')
 
 _SALTS = Addon('plugin.video.salts')
 
@@ -37,6 +40,7 @@ class DB_Connection():
         self.password = _SALTS.get_setting('db_pass')
         self.address = _SALTS.get_setting('db_address')
         self.db=None
+        self.progress=None
         
         if _SALTS.get_setting('use_remote_db') == 'true':
             if self.address is not None and self.username is not None \
@@ -112,19 +116,28 @@ class DB_Connection():
                 html=rows[0][1]
         return html
     
-    def add_other_list(self, section, username, slug):
-        sql = 'REPLACE INTO other_lists (section, username, slug) VALUES (?, ?, ?)'
-        self.__execute(sql, (section, username, slug))
+    def add_other_list(self, section, username, slug, name=None):
+        sql = 'REPLACE INTO other_lists (section, username, slug, name) VALUES (?, ?, ?, ?)'
+        self.__execute(sql, (section, username, slug, name))
         
     def delete_other_list(self, section, username, slug):
         sql = 'DELETE FROM other_lists WHERE section=? AND username=? and slug=?'
         self.__execute(sql, (section, username, slug))
 
+    def rename_other_list(self, section, username, slug, name):
+        sql = 'UPDATE other_lists set name=? WHERE section=? AND username=? AND slug=?'
+        self.__execute(sql, (name, section, username, slug))
+        
     def get_other_lists(self, section):
-        sql = 'SELECT username, slug FROM other_lists WHERE section=?'
+        sql = 'SELECT username, slug, name FROM other_lists WHERE section=?'
         rows=self.__execute(sql, (section,))
         return rows
 
+    def get_all_other_lists(self):
+        sql = 'SELECT * FROM other_lists'
+        rows=self.__execute(sql)
+        return rows
+        
     def set_related_url(self, video_type, title, year, source, rel_url, season='', episode=''):
         sql = 'REPLACE INTO rel_url (video_type, title, year, season, episode, source, rel_url) VALUES (?, ?, ?, ?, ?, ?, ?)'
         self.__execute(sql, (video_type, title, year, season, episode, source, rel_url))
@@ -142,6 +155,11 @@ class DB_Connection():
         rows=self.__execute(sql, (video_type, title, year, season, episode, source))
         return rows
                        
+    def get_all_rel_urls(self):
+        sql = 'SELECT * FROM rel_url'
+        rows=self.__execute(sql)
+        return rows
+        
     def get_setting(self, setting):
         sql = 'SELECT value FROM db_info WHERE setting=?'
         rows=self.__execute(sql, (setting,))
@@ -152,23 +170,79 @@ class DB_Connection():
         sql = 'REPLACE INTO db_info (setting, value) VALUES (?, ?)'
         self.__execute(sql, (setting, value))
     
-#     def set_tvshow_id(self, title, year, tvshow_id):
-#         sql = 'REPLACE INTO tvshow_rel (title, year, tvshow_Id) VALUES (?, ?, ?)'
-#         self.__execute(sql, (title, year, tvshow_id))
-#     
-#     def get_tvshow_id(self, title, year):
-#         sql = "SELECT tvshow_id FROM tvshow_rel WHERE title=? and year=?"
-#         rows=self.__execute(sql, (title, year))
-#         if rows:
-#             return rows[0][0]
-#         else:
-#             return None
-#     
+    def export_from_db(self, full_path):
+        temp_path = os.path.join(xbmc.translatePath("special://profile"),'temp_export_%s.csv' % (int(time.time())))
+        with open(temp_path, 'w') as f:
+            writer=csv.writer(f)
+            f.write('***VERSION: %s***\n' % self.__get_db_version())
+            if self.__table_exists('rel_url'):
+                f.write(CSV_MARKERS.REL_URL+'\n')
+                for fav in self.get_all_rel_urls():
+                    writer.writerow(fav)
+            if self.__table_exists('other_lists'):
+                f.write(CSV_MARKERS.OTHER_LISTS+'\n')
+                for sub in self.get_all_other_lists():
+                    writer.writerow(sub)
+        
+        log_utils.log('Copying export file from: |%s| to |%s|' %(temp_path, full_path), xbmc.LOGDEBUG)
+        if not xbmcvfs.copy(temp_path, full_path):
+            raise Exception('Export: Copy from |%s| to |%s| failed' % (temp_path, full_path))
+          
+        if not xbmcvfs.delete(temp_path):
+            raise Exception('Export: Delete of %s failed.' % (temp_path))
+    
+    def import_into_db(self, full_path):
+        temp_path = os.path.join(xbmc.translatePath("special://profile"), 'temp_import_%s.csv' % (int(time.time())))
+        log_utils.log('Copying import file from: |%s| to |%s|' %(full_path, temp_path), xbmc.LOGDEBUG)
+        if not xbmcvfs.copy(full_path, temp_path):
+            raise Exception('Import: Copy from |%s| to |%s| failed' % (full_path, temp_path))
+        
+        try:
+            num_lines = sum(1 for line in open(temp_path))
+            if self.progress:
+                progress=self.progress
+                progress.update(0, line2='Importing Saved Data', line3='Importing 0 of %s' % (num_lines))
+            else:
+                progress = xbmcgui.DialogProgress()
+                progress.create('SALTS', line2='Import from %s' % (full_path), line3='Importing 0 of %s' % (num_lines))
+            with open(temp_path,'r') as f:
+                    reader=csv.reader(f)
+                    mode=''
+                    _=f.readline() #read header
+                    i=0
+                    for line in reader:
+                        progress.update(i*100/num_lines, line3='Importing %s of %s' % (i, num_lines))
+                        if progress.iscanceled():
+                            return
+                        if line[0] in [CSV_MARKERS.REL_URL, CSV_MARKERS.OTHER_LISTS]:
+                            mode=line[0]
+                            continue
+                        elif mode==CSV_MARKERS.REL_URL:
+                            self.set_related_url(line[0], line[1], line[2], line[5], line[6], line[3], line[4])
+                        elif mode==CSV_MARKERS.OTHER_LISTS:
+                            name = None if len(line)!=4 else line[3]
+                            self.add_other_list(line[0], line[1], line[2], name)
+                        else:
+                            raise Exception('CSV line found while in no mode')
+                        i += 1
+        finally:
+            if not xbmcvfs.delete(temp_path):
+                raise Exception('Import: Delete of %s failed.' % (temp_path))
+            progress.close()
+
     def execute_sql(self, sql):
         self.__execute(sql)
 
     # intended to be a common method for creating a db from scratch
     def init_database(self):
+        cur_version = _SALTS.get_version()
+        db_version = self.__get_db_version()
+        if db_version is not None and cur_version !=  db_version:
+            log_utils.log('DB Upgrade from %s to %s detected.' % (db_version,cur_version))
+            self.__prep_for_reinit()
+            self.progress = xbmcgui.DialogProgress()
+            self.progress.create('SALTS', line1='Migrating from %s to %s' % (db_version, cur_version), line2='Saved current data.')
+
         log_utils.log('Building SALTS Database', xbmc.LOGDEBUG)
         if self.db_type == DB_TYPES.MYSQL:
             self.__execute('CREATE TABLE IF NOT EXISTS url_cache (url VARCHAR(255) NOT NULL, response MEDIUMBLOB, timestamp TEXT, PRIMARY KEY(url))')
@@ -176,7 +250,8 @@ class DB_Connection():
             self.__execute('CREATE TABLE IF NOT EXISTS rel_url \
             (video_type VARCHAR(15) NOT NULL, title VARCHAR(255) NOT NULL, year VARCHAR(4) NOT NULL, season VARCHAR(5) NOT NULL, episode VARCHAR(5) NOT NULL, source VARCHAR(50) NOT NULL, rel_url VARCHAR(255), \
             PRIMARY KEY(video_type, title, year, season, episode, source))')
-            self.__execute('CREATE TABLE IF NOT EXISTS other_lists (section VARCHAR(10) NOT NULL, username VARCHAR(255) NOT NULL, slug VARCHAR(255) NOT NULL, PRIMARY KEY(section, username, slug))')
+            self.__execute('CREATE TABLE IF NOT EXISTS other_lists (section VARCHAR(10) NOT NULL, username VARCHAR(255) NOT NULL, slug VARCHAR(255) NOT NULL, name VARCHAR(255), \
+            PRIMARY KEY(section, username, slug))')
         else:
             self.__create_sqlite_db()
             self.__execute('CREATE TABLE IF NOT EXISTS url_cache (url VARCHAR(255) NOT NULL, response, timestamp, PRIMARY KEY(url))')
@@ -184,8 +259,14 @@ class DB_Connection():
             self.__execute('CREATE TABLE IF NOT EXISTS rel_url \
             (video_type TEXT NOT NULL, title TEXT NOT NULL, year TEXT NOT NULL, season TEXT NOT NULL, episode TEXT NOT NULL, source TEXT NOT NULL, rel_url TEXT, \
             PRIMARY KEY(video_type, title, year, season, episode, source))')
-            self.__execute('CREATE TABLE IF NOT EXISTS other_lists (section TEXT NOT NULL, username TEXT NOT NULL, slug TEXT NOT NULL, PRIMARY KEY(section, username, slug))')
+            self.__execute('CREATE TABLE IF NOT EXISTS other_lists (section TEXT NOT NULL, username TEXT NOT NULL, slug TEXT NOT NULL, name TEXT, PRIMARY KEY(section, username, slug))')
                 
+        # reload the previously saved backup export
+        if db_version is not None and cur_version !=  db_version:
+            log_utils.log('Restoring DB from backup at %s' % (self.mig_path), xbmc.LOGDEBUG)
+            self.import_into_db(self.mig_path)
+            log_utils.log('DB restored from %s' % (self.mig_path))
+
         sql = 'REPLACE INTO db_info (setting, value) VALUES(?,?)'
         self.__execute(sql, ('version', _SALTS.get_version()))
 
@@ -238,7 +319,16 @@ class DB_Connection():
             version=rows[0][0]
             
         return version
-    
+
+    # purpose is to save the current db with an export, drop the db, recreate it, then connect to it
+    def __prep_for_reinit(self):
+        self.mig_path = os.path.join(xbmc.translatePath("special://database"), 'mig_export_%s.csv' % (int(time.time())))
+        log_utils.log('Backing up DB to %s' % (self.mig_path), xbmc.LOGDEBUG)
+        self.export_from_db(self.mig_path)
+        log_utils.log('Backup export of DB created at %s' % (self.mig_path))
+        self.__drop_all()
+        log_utils.log('DB Objects Dropped', xbmc.LOGDEBUG)    
+
     def __create_sqlite_db(self):
         if not xbmcvfs.exists(os.path.dirname(self.db_path)): 
             try: xbmcvfs.mkdirs(os.path.dirname(self.db_path))

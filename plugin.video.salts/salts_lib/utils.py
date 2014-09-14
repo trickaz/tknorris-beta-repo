@@ -1,3 +1,4 @@
+import os
 import time
 import re
 import datetime
@@ -14,6 +15,7 @@ from trakt_api import Trakt_API
 from db_utils import DB_Connection
 
 ADDON = Addon('plugin.video.salts')
+ICON_PATH = os.path.join(ADDON.get_path(), 'icon.png')
 SORT_FIELDS =  [(SORT_LIST[int(ADDON.get_setting('sort1_field'))], SORT_SIGNS[ADDON.get_setting('sort1_order')]),
                 (SORT_LIST[int(ADDON.get_setting('sort2_field'))], SORT_SIGNS[ADDON.get_setting('sort2_order')]),
                 (SORT_LIST[int(ADDON.get_setting('sort3_field'))], SORT_SIGNS[ADDON.get_setting('sort3_order')]),
@@ -39,10 +41,14 @@ db_connection=DB_Connection()
 def choose_list(username=None):
     lists = trakt_api.get_lists(username)
     if username is None: lists.insert(0, {'name': 'watchlist', 'slug': WATCHLIST_SLUG})
-    dialog=xbmcgui.Dialog()
-    index = dialog.select('Pick a list', [list_data['name'] for list_data in lists])
-    if index>-1:
-        return lists[index]['slug']
+    if lists:
+        dialog=xbmcgui.Dialog()
+        index = dialog.select('Pick a list', [list_data['name'] for list_data in lists])
+        if index>-1:
+            return lists[index]['slug']
+    else:
+        builtin = 'XBMC.Notification(%s,No Lists exist for user: %s, 5000, %s)'
+        xbmc.executebuiltin(builtin % (ADDON.get_name(), username, ICON_PATH))
 
 def show_id(show):
     queries={}
@@ -102,10 +108,6 @@ def make_info(item, show=''):
     log_utils.log('Making Info: Item: %s' % (item), xbmc.LOGDEBUG)
     info={}
     info['title']=item['title']
-    
-    if 'ratings' in item: 
-        info['rating']=int(item['ratings']['percentage'])/10.0
-        info['votes']=item['ratings']['votes']
     if 'overview' in item: info['plot']=info['plotoutline']=item['overview']
     if 'runtime' in item: info['duration']=item['runtime']
     if 'imdb_id' in item: info['code']=item['imdb_id']
@@ -116,7 +118,15 @@ def make_info(item, show=''):
     if 'number' in item: info['episode']=item['number']
     if 'genres' in item: info['genre']=', '.join(item['genres'])
     if 'network' in item: info['studio']=item['network']
+    if 'status' in item: info['status']=item['status']
+    if 'tagline' in item: info['tagline']=item['tagline']
+    if 'watched' in item and item['watched']: info['playcount']=1
+    if 'plays' in item and item['plays']: info['playcount']=item['plays']
     
+    if 'ratings' in item: 
+        info['rating']=int(item['ratings']['percentage'])/10.0
+        info['votes']=item['ratings']['votes']
+
     try:
         if 'first_aired' in item: info['aired']=info['premiered']=time.strftime('%Y-%m-%d', time.localtime(item['first_aired']))
     except ValueError: # windows throws a ValueError on negative values to localtime  
@@ -129,17 +139,20 @@ def make_info(item, show=''):
         d=datetime.datetime.fromtimestamp(0) + datetime.timedelta(seconds=item['released'])
         info['premiered']=d.strftime('%Y-%m-%d')
          
-    if 'status' in item: info['status']=item['status']
-    if 'tagline' in item: info['tagline']=item['tagline']
-    if 'watched' in item and item['watched']: info['playcount']=1
-    if 'plays' in item and item['plays']: info['playcount']=item['plays']
 
     if 'seasons' in item:
         total_episodes=0
+        watched_episodes=0
         for season in item['seasons']:
-            total_episodes += len(season['episodes'])
-        info['episode']=info['TotalEpisodes']=info['WatchedEpisodes']=total_episodes
-        info['UnWatchedEpisodes']=0
+            if 'aired' in season and 'completed' in season:
+                total_episodes += season['aired']
+                watched_episodes += season['completed']
+            else:
+                total_episodes += len(season['episodes'])
+                watched_episodes += len(season['episodes'])
+        info['episode']=info['TotalEpisodes']=total_episodes
+        info['WatchedEpisodes']=watched_episodes
+        info['UnWatchedEpisodes']=total_episodes - watched_episodes
 
     if 'trailer' in item:
         match=re.search('\?v=(.*)', item['trailer'])

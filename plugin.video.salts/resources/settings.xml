@@ -1,4 +1,8 @@
 <settings>
+	<category label="General">
+	    <setting id="theme" type="enum" label="Addon Theme" values="Shine|Luna Blue" default="0"/>
+		<setting id="parallel_mode" type="enum" label="Parallel Mode" values="Threads|Processes|None" default="0"/>
+	</category>
 	<category label="Trakt.tv">
 		<setting id="username" type="text" label="Trakt Username" default=""/>
 		<setting id="password" type="text" label="Trakt Password" default="" option="hidden"/>
@@ -11,7 +15,8 @@
 	    <setting id="TV_fav_slug" type="text" visible="false"/>
 	    <setting id="Movies_fav_slug" type="text" visible="false"/>
 	    <setting id="remind_count" type="number" default="0" visible="false"/>
-	    <setting id="theme" type="enum" label="Addon Theme" values="Shine|Luna Blue" default="0"/>
+	    <setting id="sort_progress" type="enum" label="My Next Episodes Sort Order" values="Activity|Title|Most Completed|Least Completed|Recently Aired|Previously Aired" default="0"/>
+	    <setting id="show_unaired" type="bool" label="Show unaired episodes in My Next Episodes" default="false"/>
     </category>
     <category label="Library Integration">
 	    <setting id="tvshow-folder" type="folder" label="TV Show Folder"
@@ -32,7 +37,6 @@
 		<setting id="disabled_scrapers" type="text" visible="false"/>
         <setting id="auto-play" type="bool" label="Auto-Play Sources" default="false"/>
 		<setting id="source-win" type="labelenum" label="     Source Selection Method" values="Directory|Dialog" default="Dialog"/>
-		<setting id="parallel_mode" type="enum" label="Parallel Mode" values="Threads|Processes|None" default="0"/>
 		<setting id="source_timeout" type="slider" label="Scraper Timeout (seconds) (0=No Limit)" default="5" range="0,120" option="int"/>
 		<setting id="source_results" type="number" label="Maximum Source Results (0=No Limit)" default="0"/>
 		<setting id="source_sort_order" type="text" label="Source Sort Order" enable="false" visible="false"/>
@@ -71,8 +75,12 @@
         <setting id="db_pass" type="text" label="    Password" enable="eq(-4,true)" visible="eq(-4,true)" default="" option="hidden"/>
         <setting id="db_name" type="text" label="    Database" enable="eq(-5,true)" visible="eq(-5,true)" default="salts_db"/>
         <setting id="flush_cache" type="action" label="Flush webpage cache..." enable="true"
-                 action="RunPlugin(plugin://plugin.video.salts/?mode=flush_cache)"/>
+        	action="RunPlugin(plugin://plugin.video.salts/?mode=flush_cache)"/>
         <setting id="reset_db" type="action" label="Reset SALTS DB ([COLOR red]SQLITE Only[/COLOR])" enable="true"
-                 action="RunPlugin(plugin://plugin.video.salts/?mode=reset_db)"/>
+        	action="RunPlugin(plugin://plugin.video.salts/?mode=reset_db)"/>
+         <setting id="db_export" type="action" label="Export data from SALTS DB" enable="true" 
+         	action="RunPlugin(plugin://plugin.video.salts/?mode=export_db)"/>
+         <setting id="db_import" type="action" label="Import data into SALTS DB" enable="true"
+         	action="RunPlugin(plugin://plugin.video.salts/?mode=import_db)"/>
 	</category>	
 </settings>

@@ -1,4 +1,5 @@
-__all__ = ['scraper', 'dummy_scraper', 'pw_scraper', 'uflix_scraper', 'watchseries_scraper', 'movie25_scraper', 'merdb_scraper', '2movies_scraper', 'icefilms_scraper', 'afdah_scraper', 'istreamhd_scraper']
+__all__ = ['scraper', 'dummy_scraper', 'pw_scraper', 'uflix_scraper', 'watchseries_scraper', 'movie25_scraper', 'merdb_scraper', '2movies_scraper', 'icefilms_scraper', 'afdah_scraper', 
+           'istreamhd_scraper', 'movieshd_scraper']
 
 import re
 import os
