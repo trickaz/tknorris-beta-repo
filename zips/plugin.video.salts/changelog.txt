@@ -1,3 +1,9 @@
+[B]Version 0.0.9[/B]
+- Added copy list function
+- Add ability to remove other lists
+- Add more from username function
+- Added simplymovies scraper
+
 [B]Version 0.0.8[/B]
 - Added movieshd.co scraper
 - Fixed uflix.org scraper (Site keeps making changes!)

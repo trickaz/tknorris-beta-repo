@@ -76,17 +76,17 @@ class Trakt_API():
         url='/user/lists.json/%s/%s' % (API_KEY, username)
         return self.__call_trakt(url, cache_limit=0)
     
-    def add_to_list(self, slug, item):
-        return self.__manage_list('add', slug, item)
+    def add_to_list(self, slug, items):
+        return self.__manage_list('add', slug, items)
         
-    def remove_from_list(self, slug, item):
-        return self.__manage_list('delete', slug, item)
+    def remove_from_list(self, slug, items):
+        return self.__manage_list('delete', slug, items)
     
-    def add_to_watchlist(self, section, item):
-        return self.__manage_watchlist('watchlist', section, item)
+    def add_to_watchlist(self, section, items):
+        return self.__manage_watchlist('watchlist', section, items)
         
-    def remove_from_watchlist(self, section, item):
-        return self.__manage_watchlist('unwatchlist', section, item)
+    def remove_from_watchlist(self, section, items):
+        return self.__manage_watchlist('unwatchlist', section, items)
     
     def get_trending(self, section):
         url='/%s/trending.json/%s' % (TRAKT_SECTIONS[section], API_KEY)
@@ -159,14 +159,16 @@ class Trakt_API():
         url=re.sub(pattern, '', url.lower())
         return url
     
-    def __manage_list(self, action, slug, item):
+    def __manage_list(self, action, slug, items):
         url='/lists/items/%s/%s' % (action, API_KEY)
-        extra_data={'slug': slug, 'items': [item]}
+        if not isinstance(items, (list,tuple)): items=[items]
+        extra_data={'slug': slug, 'items': items}
         return self.__call_trakt(url, extra_data, cache_limit=0)
     
-    def __manage_watchlist(self, action, section, item):
+    def __manage_watchlist(self, action, section, items):
         url='/%s/%s/%s' % (TRAKT_SECTIONS[section][:-1], action, API_KEY)
-        extra_data={TRAKT_SECTIONS[section]: [item]}
+        if not isinstance(items, (list,tuple)): items=[items]
+        extra_data={TRAKT_SECTIONS[section]: items}
         return self.__call_trakt(url, extra_data, cache_limit=0)
     
     def __call_trakt(self, url, extra_data=None, cache_limit=.25):
