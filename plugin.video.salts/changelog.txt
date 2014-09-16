@@ -1,3 +1,12 @@
+[B]Version 0.0.10[/B]
+- Added viooz.be scraper
+- Added yify.tv scraper (Yay for HD!)
+- Add support for media urls that don't need urlresolver
+- Updated set related url to show scrapers that timeout
+- Minor fixes to movieshd.co scraper
+- fix strptime bug (hopefully!)
+- fix episode view content_type
+
 [B]Version 0.0.9[/B]
 - Added copy list function
 - Add ability to remove other lists

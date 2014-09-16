@@ -102,11 +102,9 @@ class SimplyMovies_Scraper(scraper.Scraper):
         url = urlparse.urljoin(self.base_url, show_url)
         html = self.__http_get(url, cache_limit=2)
         pattern='h3>Season\s+%s(.*?)(?:<h3>|</div>)' % (season)
-        print pattern
         match = re.search(pattern, html, re.DOTALL)
         if match:
             container=match.group(1)
-            print container
             pattern='href="([^"]+)">Episode %s(?:|<)' % (episode)
             match = re.search(pattern, container, re.DOTALL)
             if match:

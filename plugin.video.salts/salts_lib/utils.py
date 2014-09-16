@@ -1,5 +1,6 @@
 import os
 import time
+import _strptime
 import re
 import datetime
 import xbmc
@@ -345,7 +346,7 @@ def get_next_run(task):
         last_run_string = db_connection.get_setting(task+'-last_run')
         if not last_run_string: last_run_string=LONG_AGO
         last_run=datetime.datetime.strptime(last_run_string, "%Y-%m-%d %H:%M:%S.%f")
-    except TypeError:
+    except (TypeError, ImportError):
         last_run=datetime.datetime(*(time.strptime(last_run_string, '%Y-%m-%d %H:%M:%S.%f')[0:6]))
     interval=datetime.timedelta(hours=float(ADDON.get_setting(task+'-interval')))
     return (last_run+interval)

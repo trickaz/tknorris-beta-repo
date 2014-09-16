@@ -25,9 +25,10 @@ from salts_lib.constants import VIDEO_TYPES
 from salts_lib.db_utils import DB_Connection
 from salts_lib.constants import QUALITIES
 
-BASE_URL = 'http://movieshd.co'
+QUALITY_MAP = {'DVD': QUALITIES.HIGH, 'CAM': QUALITIES.LOW}
+BASE_URL = 'http://viooz.be'
 
-class MoviesHD_Scraper(scraper.Scraper):
+class VioozBe_Scraper(scraper.Scraper):
     base_url=BASE_URL
     def __init__(self, timeout=scraper.DEFAULT_TIMEOUT):
         self.timeout=timeout
@@ -40,13 +41,17 @@ class MoviesHD_Scraper(scraper.Scraper):
     
     @classmethod
     def get_name(cls):
-        return 'MoviesHD'
+        return 'viooz.be'
     
     def resolve_link(self, link):
-        return link
+        url = urlparse.urljoin(self.base_url, link)
+        html = self.__http_get(url, cache_limit=0)
+        match = re.search('id=\'iframe2\' src="([^"]+)', html, re.DOTALL|re.I)
+        if match:
+            return match.group(1)
 
     def format_source_label(self, item):
-        return '[%s] %s (%s views) (%s Up, %s Down) (%s/100)' % (item['quality'], item['host'],  item['views'], item['up'], item['down'], item['rating'])
+        return '[%s] %s (%s Up, %s Down) (%s/100)' % (item['quality'], item['host'], item['up'], item['down'], item['rating'])
     
     def get_sources(self, video_type, title, year, season='', episode=''):
         source_url= self.get_url(video_type, title, year, season, episode)
@@ -55,19 +60,22 @@ class MoviesHD_Scraper(scraper.Scraper):
             url = urlparse.urljoin(self.base_url,source_url)
             html = self.__http_get(url, cache_limit=.5)
             
-            hoster = {'multi-part': False, 'host': 'videomega.tv', 'class': self, 'quality': QUALITIES.HD, 'views': None, 'rating': None, 'up': None, 'down': None}
-            match = re.search(">ref='([^']+)", html)
-            if not match:
-                return []
-            hoster['url']='http://videomega.tv/iframe.php?ref=%s' % (match.group(1))
-            match=re.search('class="views-infos">(\d+).*?class="rating">([^%]+).*?class="nb-votes">(\d+)', html, re.DOTALL)
-            if match:
-                views, rating, votes = match.groups()
-                hoster['views']=int(views)
-                hoster['rating']=int(rating)
-                hoster['up']=int(round(hoster['rating']*int(votes)/100.0))
-                hoster['down']=int(int(votes)-hoster['up'])
-            hosters.append(hoster)
+            pattern='class="link_name">([^<]+).*?href="([^"]+).*?pic_good\.gif[^>]+>\s*(\d+).*?pic_bad\.gif[^>]+>\s*(\d+)'
+            for match in re.finditer(pattern, html, re.DOTALL):
+                host, url, up, down = match.groups()
+                up=int(up)
+                down=int(down)
+                hoster = {'multi-part': False}
+                hoster['host']=host
+                hoster['class']=self
+                hoster['url']=url
+                hoster['quality']=None
+                hoster['up']=up
+                hoster['down']=down
+                rating=up*100/(up+down) if (up>0 or down>0) else None
+                hoster['rating']=rating
+                hoster['views']=up+down
+                hosters.append(hoster)
         return hosters
 
     def get_url(self, video_type, title, year, season='', episode=''):
@@ -84,18 +92,18 @@ class MoviesHD_Scraper(scraper.Scraper):
         return url
 
     def search(self, video_type, title, year):
-        search_url = urlparse.urljoin(self.base_url, '/search/')
+        search_url = urlparse.urljoin(self.base_url, '/search-alphabets?sq=')
         search_url += urllib.quote_plus(title)
+        search_url += '&s=t'
         html = self.__http_get(search_url, cache_limit=.25)
+        pattern ='class="film boxed film_grid">.*?href="([^"]+)\s+"\s+title="Watch\s+(.*?)\s*(?:\((\d{4})\))?\s+Online"'
         results=[]
-        if not re.search('Sorry, but nothing matched your search criteria', html, re.I):
-            pattern ='href="([^"]+)"\s+title="([^"]+)\s+\((\d{4})\)'
-            for match in re.finditer(pattern, html):
-                url, title, match_year = match.groups('')
-                if not year or not match_year or year == match_year:
-                    result={'url': url.replace(self.base_url,''), 'title': title, 'year': match_year}
-                    results.append(result)
+        for match in re.finditer(pattern, html, re.DOTALL):
+            url, title, match_year = match.groups('')
+            if not year or not match_year or year == match_year:
+                result={'url': url.replace(self.base_url, ''), 'title': title, 'year': match_year}
+                results.append(result)
         return results
 
     def __http_get(self, url, cache_limit=8):
-        return super(MoviesHD_Scraper, self)._cached_http_get(url, self.base_url, self.timeout, cache_limit=cache_limit)
+        return super(VioozBe_Scraper, self)._cached_http_get(url, self.base_url, self.timeout, cache_limit=cache_limit)

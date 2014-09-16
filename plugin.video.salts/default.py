@@ -428,6 +428,7 @@ def browse_seasons(slug, fanart):
 @url_dispatcher.register(MODES.EPISODES, ['slug', 'season', 'fanart'])
 def browse_episodes(slug, season, fanart):
     folder=_SALTS.get_setting('source-win')=='Directory'
+    utils.set_view('episodes', False)
     show=trakt_api.get_show_details(slug)
     episodes=trakt_api.get_episodes(slug, season)
     totalItems=len(episodes)
@@ -553,12 +554,16 @@ def play_source(hoster_url, video_type, slug, season='', episode=''):
     if hoster_url is None:
         return False
 
-    stream_url = urlresolver.HostedMediaFile(url=hoster_url).resolve()
-    if not stream_url or not isinstance(stream_url, basestring):
-        log_utils.log('Url (%s) Resolution failed' % (hoster_url))
-        builtin = 'XBMC.Notification(%s,Could not Resolve Url: %s, 5000, %s)'
-        xbmc.executebuiltin(builtin % (_SALTS.get_name(), hoster_url, ICON_PATH))
-        return False
+    hmf = urlresolver.HostedMediaFile(url=hoster_url)
+    if not hmf:
+        log_utils.log('hoster_url not supported by urlresolver: %s' % (hoster_url))
+        stream_url = hoster_url
+    else:
+        stream_url = hmf.resolve()
+        if not stream_url or not isinstance(stream_url, basestring):
+            builtin = 'XBMC.Notification(%s,Could not Resolve Url: %s, 5000, %s)'
+            xbmc.executebuiltin(builtin % (_SALTS.get_name(), hoster_url, ICON_PATH))
+            return False
 
     try:
         art={'thumb': '', 'fanart': ''}
@@ -589,7 +594,6 @@ def play_source(hoster_url, video_type, slug, season='', episode=''):
     listitem.setPath(stream_url)
     listitem.setInfo('video', info)
     xbmcplugin.setResolvedUrl(int(sys.argv[1]), True, listitem)
-    
     return True
 
 def auto_play_sources(hosters, video_type, slug, season, episode):
@@ -623,14 +627,12 @@ def pick_source_dialog(hosters, filtered=False):
     index = dialog.select('Choose your stream', [item['label'] for item in hosters if 'label' in item])
     if index>-1:
         try:
-            hoster_url=hosters[index]['class'].resolve_link(hosters[index]['url'])
-            log_utils.log('Attempting to play url: %s' % hoster_url)
-            return hoster_url
+            if hosters[index]['url']:
+                hoster_url=hosters[index]['class'].resolve_link(hosters[index]['url'])
+                log_utils.log('Attempting to play url: %s' % hoster_url)
+                return hoster_url
         except Exception as e:
-            log_utils.log('Error (%s) while trying to resolve %s' % (str(e), hoster_url), xbmc.LOGERROR)
-            return False
-    else:
-        return None
+            log_utils.log('Error (%s) while trying to resolve %s' % (str(e), hosters[index]['url']), xbmc.LOGERROR)
     
 def pick_source_dir(hosters, video_type, slug, season='', episode='', filtered=False):
     for item in hosters:
@@ -680,6 +682,8 @@ def set_related_url(mode, video_type, title, year, season='', episode=''):
             worker = utils.start_worker(q, utils.parallel_get_url, [cls, video_type, title, year, season, episode])
             worker_count += 1
             workers.append(worker)
+            related={'class': cls(max_timeout), 'name': cls.get_name(), 'label': '[%s]' % (cls.get_name()), 'url': ''}
+            related_list.append(related)
     
     # collect results from workers
     if utils.P_MODE != P_MODES.NONE:
@@ -688,7 +692,10 @@ def set_related_url(mode, video_type, title, year, season='', episode=''):
                 log_utils.log('Calling get with timeout: %s' %(timeout), xbmc.LOGDEBUG)
                 result = q.get(True, timeout)
                 log_utils.log('Got result: %s' %(result), xbmc.LOGDEBUG)
-                related_list.append(result)
+                #related_list.append(result)
+                for i, item in enumerate(related_list):
+                    if item['name']==result['name']:
+                        related_list[i]=result
                 worker_count -=1
                 if max_timeout>0:
                     timeout = max_timeout - (time.time() - begin)

@@ -22,12 +22,17 @@ import urlparse
 import cookielib
 import xbmc
 import xbmcaddon
+import xbmcgui
 import os
+import re
+import time
 from salts_lib import log_utils
 from salts_lib.db_utils import DB_Connection
 from salts_lib.constants import VIDEO_TYPES
 from salts_lib.constants import USER_AGENT
+
 BASE_URL=''
+CAPTCHA_BASE_URL = 'http://www.google.com/recaptcha/api'
 
 COOKIEPATH=xbmc.translatePath(xbmcaddon.Addon().getAddonInfo('profile'))
 COOKIEFILE=os.path.join(COOKIEPATH,'cookies.lwp')
@@ -189,11 +194,11 @@ class Scraper(object):
         
         try:
             cj = self._set_cookies(base_url, cookies)
-            if data is not None: data=urllib.urlencode(data, True)            
+            if data is not None: data=urllib.urlencode(data, True)    
             request = urllib2.Request(url, data=data)
             request.add_header('User-Agent', USER_AGENT)
             request.add_unredirected_header('Host', request.get_host())
-            request.add_unredirected_header('Referer', base_url)
+            request.add_unredirected_header('Referer', url)
             response = urllib2.urlopen(request, timeout=timeout)
             cj.save(ignore_discard=True)
             html=response.read()
@@ -216,4 +221,25 @@ class Scraper(object):
         try: cj.load(ignore_discard=True)
         except: pass
         return cj
-        
+
+    def _do_recaptcha(self, key, tries=None, max_tries=None):
+        challenge_url = CAPTCHA_BASE_URL + '/challenge?k=%s' % (key)
+        html = self._cached_http_get(challenge_url, CAPTCHA_BASE_URL, timeout=DEFAULT_TIMEOUT, cache_limit=0)
+        match = re.search("challenge\s+\:\s+'([^']+)", html)
+        captchaimg = 'http://www.google.com/recaptcha/api/image?c=%s' % (match.group(1))
+        img = xbmcgui.ControlImage(450,15,400,130,captchaimg)
+        wdlg = xbmcgui.WindowDialog()
+        wdlg.addControl(img)
+        wdlg.show()
+        header = 'Type the words in the image'
+        if tries and max_tries:
+            header += ' (Try: %s/%s)' % (tries, max_tries)
+        kb = xbmc.Keyboard('', header, False)
+        kb.doModal()
+        solution=''
+        if kb.isConfirmed():
+            solution = kb.getText()
+            if not solution:
+                raise Exception ('You must enter text in the image to access video')
+        wdlg.close()
+        return {'recaptcha_challenge_field':match.group(1),'recaptcha_response_field':solution}
