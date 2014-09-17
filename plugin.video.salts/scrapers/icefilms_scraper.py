@@ -51,7 +51,7 @@ class IceFilms_Scraper(scraper.Scraper):
         url, query = link.split('?', 1)
         data = urlparse.parse_qs(query, True)
         url = urlparse.urljoin(self.base_url, url)
-        html = self.__http_get(url, data=data, cache_limit=0)
+        html = self._http_get(url, data=data, cache_limit=0)
         match = re.search('url=(.*)', html)
         if match:
             url=urllib.unquote_plus(match.group(1))
@@ -63,19 +63,19 @@ class IceFilms_Scraper(scraper.Scraper):
         label='[%s] %s%s (%s/100) ' % (item['quality'], item['label'], item['host'], item['rating'])
         return label
     
-    def get_sources(self, video_type, title, year, season='', episode=''):
-        source_url=self.get_url(video_type, title, year, season, episode)
+    def get_sources(self, video):
+        source_url=self.get_url(video)
         sources = []
         if source_url:
             try:
                 url = urlparse.urljoin(self.base_url, source_url)
-                html = self.__http_get(url, cache_limit=.5)
+                html = self._http_get(url, cache_limit=.5)
                 
                 pattern='<iframe id="videoframe" src="([^"]+)'
                 match = re.search(pattern, html)
                 frame_url = match.group(1)
                 url = urlparse.urljoin(self.base_url, frame_url)
-                html = self.__http_get(url, cache_limit=.5)
+                html = self._http_get(url, cache_limit=.5)
                 
                 match=re.search('lastChild\.value="([^"]+)"', html)
                 secret=match.group(1)
@@ -109,11 +109,11 @@ class IceFilms_Scraper(scraper.Scraper):
                         source['views']=None
                         sources.append(source)
             except Exception as e:
-                log_utils.log('Failure (%s) during get sources: |%s|%s|%s|%s|%s|' % (str(e), video_type, title, year, season, episode))
+                log_utils.log('Failure (%s) during get sources: |%s|' % (str(e), video))
         return sources
 
-    def get_url(self, video_type, title, year, season='', episode=''):
-        return super(IceFilms_Scraper, self)._default_get_url(video_type, title, year, season, episode)
+    def get_url(self, video):
+        return super(IceFilms_Scraper, self)._default_get_url(video)
     
     def search(self, video_type, title, year):
         if video_type==VIDEO_TYPES.MOVIE:
@@ -131,34 +131,24 @@ class IceFilms_Scraper(scraper.Scraper):
             first_letter=title[:1]
         url = url + first_letter.upper()
         
-        html = self.__http_get(url, cache_limit=.25)
+        html = self._http_get(url, cache_limit=.25)
         h = HTMLParser.HTMLParser()
         html = unicode(html, 'windows-1252')
         html = h.unescape(html)
-        norm_title = self.__normalize_title(title)
+        norm_title = self._normalize_title(title)
         pattern = 'class=star.*?href=([^>]+)>(.*?)(?:\s*\((\d+)\))?</a>'
         results=[]
         for match in re.finditer(pattern, html, re.DOTALL):
             url, match_title, match_year = match.groups('')
-            if norm_title in self.__normalize_title(match_title) and (not year or not match_year or year == match_year):
+            if norm_title in self._normalize_title(match_title) and (not year or not match_year or year == match_year):
                 result={'url': url, 'title': match_title, 'year': match_year}
                 results.append(result)
         return results
     
-    def __normalize_title(self, title):
-        new_title=title.upper()
-        new_title=re.sub('\W', '', new_title)
-        #log_utils.log('In title: |%s| Out title: |%s|' % (title,new_title), xbmc.LOGDEBUG)
-        return new_title
-    
-    def _get_episode_url(self, show_url, season, episode):
-        url = urlparse.urljoin(self.base_url, show_url)
-        html = self.__http_get(url, cache_limit=2)
-        pattern = 'href=(/ip\.php[^>]+)>%sx0?%s\s+' % (season, episode)
-        match = re.search(pattern, html)
-        if match:
-            url = match.group(1)
-            return url.replace(self.base_url, '')
+    def _get_episode_url(self, show_url, season, episode, ep_title):
+        episode_pattern = 'href=(/ip\.php[^>]+)>%sx0?%s\s+' % (season, episode)
+        title_pattern='class=star>\s*<a href=([^>]+)>(?:\d+x\d+\s+)+([^<]+)'
+        return super(IceFilms_Scraper, self)._default_get_episode_url(show_url, season, episode, ep_title, episode_pattern, title_pattern)
         
-    def __http_get(self, url, data=None, cache_limit=8):
+    def _http_get(self, url, data=None, cache_limit=8):
         return super(IceFilms_Scraper, self)._cached_http_get(url, self.base_url, self.timeout, data=data, cache_limit=cache_limit)

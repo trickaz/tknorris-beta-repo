@@ -11,6 +11,7 @@ import sys
 import hashlib
 from constants import *
 from scrapers import * # import all scrapers into this namespace
+from scrapers import ScraperVideo
 from addon.common.addon import Addon
 from trakt_api import Trakt_API
 from db_utils import DB_Connection
@@ -280,7 +281,7 @@ def reap_workers(workers, timeout=0):
             living_workers.append(worker)
     return living_workers
 
-def parallel_get_sources(q, cls, video_type, title, year, season, episode):
+def parallel_get_sources(q, cls, video):
     scraper_instance=cls(int(ADDON.get_setting('source_timeout')))
     if P_MODE == P_MODES.THREADS:
         worker=threading.current_thread()
@@ -288,11 +289,11 @@ def parallel_get_sources(q, cls, video_type, title, year, season, episode):
         worker=multiprocessing.current_process()
         
     log_utils.log('Getting %s sources using %s' % (cls.get_name(), worker), xbmc.LOGDEBUG)
-    hosters=scraper_instance.get_sources(video_type, title, year, season, episode)
+    hosters=scraper_instance.get_sources(video)
     log_utils.log('%s returned %s sources from %s' % (cls.get_name(), len(hosters), worker), xbmc.LOGDEBUG)
     q.put(hosters)
 
-def parallel_get_url(q, cls, video_type, title, year, season, episode):
+def parallel_get_url(q, cls, video):
     scraper_instance=cls(int(ADDON.get_setting('source_timeout')))
     if P_MODE == P_MODES.THREADS:
         worker=threading.current_thread()
@@ -300,7 +301,7 @@ def parallel_get_url(q, cls, video_type, title, year, season, episode):
         worker=multiprocessing.current_process()
         
     log_utils.log('Getting %s url using %s' % (cls.get_name(), worker), xbmc.LOGDEBUG)
-    url=scraper_instance.get_url(video_type, title, year, season, episode)
+    url=scraper_instance.get_url(video)
     log_utils.log('%s returned url %s from %s' % (cls.get_name(), url, worker), xbmc.LOGDEBUG)
     related={}
     related['class']=scraper_instance
@@ -351,20 +352,21 @@ def get_next_run(task):
     interval=datetime.timedelta(hours=float(ADDON.get_setting(task+'-interval')))
     return (last_run+interval)
 
-def url_exists(video_type, title, year, season='', episode=''):
+def url_exists(video):
     """
     check each source for a url for this video; return True as soon as one is found. If none are found, return False
     """
     max_timeout = int(ADDON.get_setting('source_timeout'))
-    log_utils.log('Checking for Url Existence: |%s|%s|%s|%s|%s|' % (video_type, title, year, season, episode), xbmc.LOGDEBUG)
-    for cls in relevant_scrapers(video_type):
-        scraper_instance=cls(max_timeout)
-        url = scraper_instance.get_url(video_type, title, year, season, episode)
-        if url:
-            log_utils.log('Found url for |%s|%s|%s|%s|%s| @ %s: %s' % (video_type, title, year, season, episode, cls.get_name(), url), xbmc.LOGDEBUG)
-            return True
+    log_utils.log('Checking for Url Existence: |%s|' % (video), xbmc.LOGDEBUG)
+    for cls in relevant_scrapers(video.video_type):
+        if ADDON.get_setting('%s-sub_check' % (cls.get_name()))=='true':
+            scraper_instance=cls(max_timeout)
+            url = scraper_instance.get_url(video)
+            if url:
+                log_utils.log('Found url for |%s| @ %s: %s' % (video, cls.get_name(), url), xbmc.LOGDEBUG)
+                return True
 
-    log_utils.log('No url found for: |%s|%s|%s|%s|%s|' % (video_type, title, year, season, episode))
+    log_utils.log('No url found for: |%s|' % (video))
     return False
 
 def relevant_scrapers(video_type=None, include_disabled=False, order_matters=False):

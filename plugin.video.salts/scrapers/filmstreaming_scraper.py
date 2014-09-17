@@ -24,9 +24,10 @@ from salts_lib import log_utils
 from salts_lib.constants import VIDEO_TYPES
 from salts_lib.db_utils import DB_Connection
 from salts_lib.constants import QUALITIES
-BASE_URL = 'http://afdah.com'
 
-class Afdah_Scraper(scraper.Scraper):
+BASE_URL = 'http://film-streaming.in'
+
+class FilmStreaming_Scraper(scraper.Scraper):
     base_url=BASE_URL
     def __init__(self, timeout=scraper.DEFAULT_TIMEOUT):
         self.timeout=timeout
@@ -39,13 +40,13 @@ class Afdah_Scraper(scraper.Scraper):
     
     @classmethod
     def get_name(cls):
-        return 'afdah'
+        return 'FilmStreaming.in'
     
     def resolve_link(self, link):
         return link
-    
+
     def format_source_label(self, item):
-        return '[%s] %s (%s/100)' % (item['quality'], item['host'], item['rating'])
+        return '[%s] %s (%s views) (%s/100)' % (item['quality'], item['host'],  item['views'], item['rating'])
     
     def get_sources(self, video):
         source_url= self.get_url(video)
@@ -54,39 +55,33 @@ class Afdah_Scraper(scraper.Scraper):
             url = urlparse.urljoin(self.base_url,source_url)
             html = self._http_get(url, cache_limit=.5)
             
-            match = re.search('This movie is of poor quality', html, re.I)
+            hoster = {'multi-part': False, 'host': 'videomega.tv', 'class': self, 'quality': QUALITIES.HIGH, 'views': None, 'rating': None}
+            match = re.search('iframe.*?src=(?:"|\')([^\'"]+)', html)
+            if not match:
+                return []
+            hoster['url']=match.group(1)
+            match=re.search('class="sirala">(\d+) views', html, re.DOTALL)
             if match:
-                quality=QUALITIES.LOW
-            else:
-                quality=QUALITIES.HIGH
-                
-            pattern = 'bullet.gif"[^>]+>\s*[^<]+</td><[^>]+>(.*?)\s*</td>.*?href="([^"]+)'
-            for match in re.finditer(pattern, html, re.DOTALL | re.I):
-                host, url = match.groups('')
-                hoster = {'multi-part': False}
-                hoster['url']=url
-                hoster['host']=host
-                hoster['class']=self
-                hoster['quality']=quality
-                hoster['rating']=None
-                hoster['views']=None
-                hosters.append(hoster)
+                hoster['views'] = match.group(1)
+            hosters.append(hoster)
         return hosters
 
     def get_url(self, video):
-        return super(Afdah_Scraper, self)._default_get_url(video)
+        return super(FilmStreaming_Scraper, self)._default_get_url(video)
 
     def search(self, video_type, title, year):
-        search_url = urlparse.urljoin(self.base_url, '/?s=%s&x=0&y=0&type=title' % (urllib.quote_plus(title)))
+        search_url = urlparse.urljoin(self.base_url, '/?s=')
+        search_url += urllib.quote_plus('%s %s' % (title, year))
         html = self._http_get(search_url, cache_limit=.25)
-        pattern ='<div><b>Title:</b>\s*(.*?)\s*<br><b>Year:</b>\s*(\d+)\s*\|.*?href="([^"]+)'
         results=[]
-        for match in re.finditer(pattern, html, re.DOTALL | re.I):
-            title, match_year, url = match.groups('')
-            if not year or not match_year or year == match_year:
-                result={'url': url.replace(self.base_url,''), 'title': title, 'year': year}
-                results.append(result)
+        if not re.search('I am sorry, what are you looking for', html, re.I):
+            pattern ='T-FilmBaslik">.*?href="([^"]+)"\s+title="([^"]+)\s+\((\d{4})\)'
+            for match in re.finditer(pattern, html, re.DOTALL):
+                url, title, match_year = match.groups('')
+                if not year or not match_year or year == match_year:
+                    result={'url': url.replace(self.base_url,''), 'title': title, 'year': match_year}
+                    results.append(result)
         return results
 
     def _http_get(self, url, cache_limit=8):
-        return super(Afdah_Scraper, self)._cached_http_get(url, self.base_url, self.timeout, cache_limit=cache_limit)
+        return super(FilmStreaming_Scraper, self)._cached_http_get(url, self.base_url, self.timeout, cache_limit=cache_limit)

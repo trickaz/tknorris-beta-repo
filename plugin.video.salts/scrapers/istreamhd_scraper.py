@@ -48,7 +48,7 @@ class IStreamHD_Scraper(scraper.Scraper):
     
     def resolve_link(self, link):
         url = urlparse.urljoin(self.base_url, link)
-        html = self.__http_get(url, cache_limit=0)
+        html = self._http_get(url, cache_limit=0)
         match = re.search('id="videoFrame".*?src="([^"]+)', html, re.DOTALL)
         if match:
             return match.group(1)
@@ -57,17 +57,17 @@ class IStreamHD_Scraper(scraper.Scraper):
         label='[%s] %s (%s views) (%s/100) ' % (item['quality'], item['host'], item['views'], item['rating'])
         return label
     
-    def get_sources(self, video_type, title, year, season='', episode=''):
-        source_url=self.get_url(video_type, title, year, season, episode)
+    def get_sources(self, video):
+        source_url=self.get_url(video)
         hosters = []
         if source_url:
             url = urlparse.urljoin(self.base_url, source_url)
-            html = self.__http_get(url, cache_limit=.5)
+            html = self._http_get(url, cache_limit=.5)
             
             hoster={'multi-part': False}
             hoster['class']=self
             # episodes seem to be consistently available in HD, but movies only in SD
-            if video_type==VIDEO_TYPES.EPISODE:
+            if video.video_type==VIDEO_TYPES.EPISODE:
                 hoster['quality']=QUALITIES.HD
             else:
                 hoster['quality']=QUALITIES.HIGH
@@ -79,12 +79,12 @@ class IStreamHD_Scraper(scraper.Scraper):
             hosters.append(hoster)
         return hosters
 
-    def get_url(self, video_type, title, year, season='', episode=''):
-        return super(IStreamHD_Scraper, self)._default_get_url(video_type, title, year, season, episode)
+    def get_url(self, video):
+        return super(IStreamHD_Scraper, self)._default_get_url(video)
     
     def search(self, video_type, title, year):
         url = urlparse.urljoin(self.base_url, '/get/search.php?q=%s' % (urllib.quote_plus(title)))
-        html = self.__http_get(url, cache_limit=.25)
+        html = self._http_get(url, cache_limit=.25)
         results=[]
         match=re.search('<ul.*</ul>', html, re.DOTALL)
         if match:
@@ -98,9 +98,9 @@ class IStreamHD_Scraper(scraper.Scraper):
             
         return results
     
-    def _get_episode_url(self, show_url, season, episode):
+    def _get_episode_url(self, show_url, season, episode, ep_title):
         url = urlparse.urljoin(self.base_url, show_url)
-        html = self.__http_get(url, cache_limit=2)
+        html = self._http_get(url, cache_limit=2)
         pattern = '<li data-role="list-divider">Season %s</li>(.*?)(?:<li data-role="list-divider">|</ul>)' % (season)
         match  = re.search(pattern, html, re.DOTALL)
         if match:
@@ -118,7 +118,7 @@ class IStreamHD_Scraper(scraper.Scraper):
                     '         <setting id="%s-username" type="text" label="     Username" default="" visible="eq(-2,true)"/>' % (name),
                     '         <setting id="%s-password" type="text" label="     Password" option="hidden" default="" visible="eq(-3,true)"/>' % (name)]
     
-    def __http_get(self, url, data=None, cache_limit=8):
+    def _http_get(self, url, data=None, cache_limit=8):
         # return all uncached blank pages if no user or pass
         if not self.username or not self.password:
             return ''
@@ -135,7 +135,7 @@ class IStreamHD_Scraper(scraper.Scraper):
     def __login(self):
         url = urlparse.urljoin(self.base_url, '/get/login.php?p=login')
         data = {'mail': self.username, 'password': self.password}
-        html=self.__http_get(url, data=data, cache_limit=0)
+        html=self._http_get(url, data=data, cache_limit=0)
         if html != 'OK':
             raise Exception('istreamhd.org login failed')
         

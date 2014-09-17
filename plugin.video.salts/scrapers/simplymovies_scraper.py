@@ -50,26 +50,26 @@ class SimplyMovies_Scraper(scraper.Scraper):
         label='[%s] %s (%s views) (%s/100) ' % (item['quality'], item['host'], item['views'], item['rating'])
         return label
     
-    def get_sources(self, video_type, title, year, season='', episode=''):
-        source_url=self.get_url(video_type, title, year, season, episode)
+    def get_sources(self, video):
+        source_url=self.get_url(video)
         hosters = []
         if source_url:
             url = urlparse.urljoin(self.base_url, source_url)
-            html = self.__http_get(url, cache_limit=.5)
+            html = self._http_get(url, cache_limit=.5)
             pattern='class="videoPlayerIframe"\s+src="([^"]+)'
             match = re.search(pattern, html)
             if match:
                 hoster={'multi-part': False, 'host': 'vk.com', 'url': match.group(1), 'class': self, 'rating': None, 'views': None}
                 # episodes seem to be consistently available in HD, but movies only in SD
-                if video_type==VIDEO_TYPES.EPISODE:
+                if video.video_type==VIDEO_TYPES.EPISODE:
                     hoster['quality']=QUALITIES.HD
                 else:
                     hoster['quality']=QUALITIES.HIGH
                 hosters.append(hoster)
         return hosters
 
-    def get_url(self, video_type, title, year, season='', episode=''):
-        return super(SimplyMovies_Scraper, self)._default_get_url(video_type, title, year, season, episode)
+    def get_url(self, video):
+        return super(SimplyMovies_Scraper, self)._default_get_url(video)
     
     def search(self, video_type, title, year):
         search_url = self.base_url
@@ -79,28 +79,22 @@ class SimplyMovies_Scraper(scraper.Scraper):
             search_url += '/index.php'
         search_url += '?searchTerm=%s&sort=added&genre=' % (urllib.quote_plus(title))
             
-        html = self.__http_get(search_url, cache_limit=.25)
+        html = self._http_get(search_url, cache_limit=.25)
         pattern = r'class="movieInfoOverlay">\s+<a\s+href="([^"]+).*?class="overlayMovieTitle">\s*([^<]+)(?:.*?class="overlayMovieRelease">.*?(\d{4})<)?'
         results=[]
-        norm_title = self.__normalize_title(title)
+        norm_title = self._normalize_title(title)
         for match in re.finditer(pattern, html, re.DOTALL):
             url, match_title, match_year = match.groups('')
             match_title=match_title.strip()
-            if norm_title == self.__normalize_title(match_title) and (match_year == '0001' or not year or not match_year or year == match_year):
+            if norm_title == self._normalize_title(match_title) and (match_year == '0001' or not year or not match_year or year == match_year):
                 url = '/'+url if not url.startswith('/') else url
                 result = {'url': url, 'title': match_title, 'year': match_year}
                 results.append(result)
         return results
     
-    def __normalize_title(self, title):
-        new_title=title.upper()
-        new_title=re.sub('\W', '', new_title)
-        #log_utils.log('In title: |%s| Out title: |%s|' % (title,new_title), xbmc.LOGDEBUG)
-        return new_title
-    
-    def _get_episode_url(self, show_url, season, episode):
+    def _get_episode_url(self, show_url, season, episode, ep_title):
         url = urlparse.urljoin(self.base_url, show_url)
-        html = self.__http_get(url, cache_limit=2)
+        html = self._http_get(url, cache_limit=2)
         pattern='h3>Season\s+%s(.*?)(?:<h3>|</div>)' % (season)
         match = re.search(pattern, html, re.DOTALL)
         if match:
@@ -112,5 +106,5 @@ class SimplyMovies_Scraper(scraper.Scraper):
                 url = '/'+url if not url.startswith('/') else url
                 return url
         
-    def __http_get(self, url, cache_limit=8):
+    def _http_get(self, url, cache_limit=8):
         return super(SimplyMovies_Scraper, self)._cached_http_get(url, self.base_url, self.timeout, cache_limit=cache_limit)

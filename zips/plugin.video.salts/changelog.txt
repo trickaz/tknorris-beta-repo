@@ -1,3 +1,11 @@
+[B]Version 0.0.11[/B]
+- Add setting to hide unaired/unknown episodes
+- Add indicator for unaired/unknown episodes
+- Add setting to exclude some scrapers from url exist checks (during subscription update)
+- Added episode title as a fall back when season & episode matching fails
+- Re-factored scrapers to encapsulate video details
+- Added filmstreaming.in scraper
+
 [B]Version 0.0.10[/B]
 - Added viooz.be scraper
 - Added yify.tv scraper (Yay for HD!)

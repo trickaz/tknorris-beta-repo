@@ -41,11 +41,11 @@ class Dummy_Scraper(scraper.Scraper):
     def format_source_label(self, item):
         pass
     
-    def get_sources(self, video_type, title, year, season='', episode=''):
+    def get_sources(self, video):
         return []
 
-    def get_url(self, video_type, title, year, season='', episode=''):
-        result=self.db_connection.get_related_url(video_type, title, year, self.get_name(), season, episode)
+    def get_url(self, video):
+        result=self.db_connection.get_related_url(video.video_type, video.title, video.year, self.get_name(), video.season, video.episode)
         if result:
             return result[0][0]
 

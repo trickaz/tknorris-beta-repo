@@ -52,12 +52,12 @@ class PW_Scraper(scraper.Scraper):
         if item['verified']: label = '[COLOR yellow]%s[/COLOR]' % (label)
         return label
     
-    def get_sources(self, video_type, title, year, season='', episode=''):
-        source_url=self.get_url(video_type, title, year, season, episode)
+    def get_sources(self, video):
+        source_url=self.get_url(video)
         hosters = []
         if source_url:
             url = urlparse.urljoin(self.base_url, source_url)
-            html = self.__http_get(url, cache_limit=.5)
+            html = self._http_get(url, cache_limit=.5)
             
             container_pattern = r'<table[^>]+class="movie_version[ "][^>]*>(.*?)</table>'
             item_pattern = (
@@ -94,8 +94,8 @@ class PW_Scraper(scraper.Scraper):
          
         return hosters
 
-    def get_url(self, video_type, title, year, season='', episode=''):
-        return super(PW_Scraper, self)._default_get_url(video_type, title, year, season, episode)
+    def get_url(self, video):
+        return super(PW_Scraper, self)._default_get_url(video)
     
     def search(self, video_type, title, year):
         search_url = urlparse.urljoin(self.base_url, '/index.php?search_keywords=')
@@ -107,13 +107,13 @@ class PW_Scraper(scraper.Scraper):
             search_url += '&search_section=1'
             
         results=[]
-        html = self. __http_get(self.base_url, cache_limit=0)
+        html = self. _http_get(self.base_url, cache_limit=0)
         match = re.search('input type="hidden" name="key" value="([0-9a-f]*)"', html)
         if match:
             key=match.group(1)
             search_url += '&key=' + key
             
-            html = self.__http_get(search_url, cache_limit=.25)
+            html = self._http_get(search_url, cache_limit=.25)
             pattern = r'class="index_item.+?href="(.+?)" title="Watch (.+?)"?\(?([0-9]{4})?\)?"?>'
             for match in re.finditer(pattern, html):
                 result={}
@@ -126,13 +126,10 @@ class PW_Scraper(scraper.Scraper):
             log_utils.log('Unable to locate PW search key', xbmc.LOGWARNING)
         return results
     
-    def _get_episode_url(self, show_url, season, episode):
-        url = urlparse.urljoin(self.base_url, show_url)
-        html = self.__http_get(url, cache_limit=2)
-        pattern = '"tv_episode_item".+?href="([^"]+/season-%s-episode-%s)">' % (season, episode)
-        match = re.search(pattern, html, re.DOTALL)
-        if match:
-            return match.group(1)
+    def _get_episode_url(self, show_url, season, episode, ep_title):
+        episode_pattern = '"tv_episode_item".+?href="([^"]+/season-%s-episode-%s)">' % (season, episode)
+        title_pattern='class="tv_episode_item".*?href="([^"]+).*?class="tv_episode_name">\s+-\s+([^<]+)'
+        return super(PW_Scraper, self)._default_get_episode_url(show_url, season, episode, ep_title, episode_pattern, title_pattern)
         
-    def __http_get(self, url, cache_limit=8):
+    def _http_get(self, url, cache_limit=8):
         return super(PW_Scraper, self)._cached_http_get(url, self.base_url, self.timeout, cache_limit=cache_limit)

@@ -45,7 +45,7 @@ class VioozBe_Scraper(scraper.Scraper):
     
     def resolve_link(self, link):
         url = urlparse.urljoin(self.base_url, link)
-        html = self.__http_get(url, cache_limit=0)
+        html = self._http_get(url, cache_limit=0)
         match = re.search('id=\'iframe2\' src="([^"]+)', html, re.DOTALL|re.I)
         if match:
             return match.group(1)
@@ -53,12 +53,12 @@ class VioozBe_Scraper(scraper.Scraper):
     def format_source_label(self, item):
         return '[%s] %s (%s Up, %s Down) (%s/100)' % (item['quality'], item['host'], item['up'], item['down'], item['rating'])
     
-    def get_sources(self, video_type, title, year, season='', episode=''):
-        source_url= self.get_url(video_type, title, year, season, episode)
+    def get_sources(self, video):
+        source_url= self.get_url(video)
         hosters=[]
         if source_url:
             url = urlparse.urljoin(self.base_url,source_url)
-            html = self.__http_get(url, cache_limit=.5)
+            html = self._http_get(url, cache_limit=.5)
             
             pattern='class="link_name">([^<]+).*?href="([^"]+).*?pic_good\.gif[^>]+>\s*(\d+).*?pic_bad\.gif[^>]+>\s*(\d+)'
             for match in re.finditer(pattern, html, re.DOTALL):
@@ -78,24 +78,14 @@ class VioozBe_Scraper(scraper.Scraper):
                 hosters.append(hoster)
         return hosters
 
-    def get_url(self, video_type, title, year, season='', episode=''):
-        url = None
-        result = self.db_connection.get_related_url(video_type, title, year, self.get_name())
-        if result:
-            url=result[0][0]
-            log_utils.log('Got local related url: |%s|%s|%s|%s|%s|' % (video_type, title, year, self.get_name(), url))
-        else:
-            results = self.search(video_type, title, year)
-            if results:
-                url = results[0]['url']
-                self.db_connection.set_related_url(video_type, title, year, self.get_name(), url)
-        return url
+    def get_url(self, video):
+        return super(VioozBe_Scraper, self)._default_get_url(video)
 
     def search(self, video_type, title, year):
         search_url = urlparse.urljoin(self.base_url, '/search-alphabets?sq=')
         search_url += urllib.quote_plus(title)
         search_url += '&s=t'
-        html = self.__http_get(search_url, cache_limit=.25)
+        html = self._http_get(search_url, cache_limit=.25)
         pattern ='class="film boxed film_grid">.*?href="([^"]+)\s+"\s+title="Watch\s+(.*?)\s*(?:\((\d{4})\))?\s+Online"'
         results=[]
         for match in re.finditer(pattern, html, re.DOTALL):
@@ -105,5 +95,5 @@ class VioozBe_Scraper(scraper.Scraper):
                 results.append(result)
         return results
 
-    def __http_get(self, url, cache_limit=8):
+    def _http_get(self, url, cache_limit=8):
         return super(VioozBe_Scraper, self)._cached_http_get(url, self.base_url, self.timeout, cache_limit=cache_limit)

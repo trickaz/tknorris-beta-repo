@@ -51,12 +51,12 @@ class MerDB_Scraper(scraper.Scraper):
         if item['verified']: label = '[COLOR yellow]%s[/COLOR]' % (label)
         return label
     
-    def get_sources(self, video_type, title, year, season='', episode=''):
-        source_url=self.get_url(video_type, title, year, season, episode)
+    def get_sources(self, video):
+        source_url=self.get_url(video)
         hosters = []
         if source_url:
             url = urlparse.urljoin(self.base_url, source_url)
-            html = self.__http_get(url, cache_limit=.5)
+            html = self._http_get(url, cache_limit=.5)
             
             container_pattern = r'<table[^>]+class="movie_version[ "][^>]*>(.*?)</table>'
             item_pattern = (
@@ -93,8 +93,8 @@ class MerDB_Scraper(scraper.Scraper):
          
         return hosters
 
-    def get_url(self, video_type, title, year, season='', episode=''):
-        return super(MerDB_Scraper, self)._default_get_url(video_type, title, year, season, episode)
+    def get_url(self, video):
+        return super(MerDB_Scraper, self)._default_get_url(video)
     
     def search(self, video_type, title, year):
         search_url = self.base_url
@@ -106,7 +106,7 @@ class MerDB_Scraper(scraper.Scraper):
         search_url += '&year=' + urllib.quote_plus(str(year))
         search_url += '&advanced_search=Search'
             
-        html = self.__http_get(search_url, cache_limit=.25)
+        html = self._http_get(search_url, cache_limit=.25)
         pattern = r'class="list_box_title.+?href="(.+?)" title="Watch (.+?)"?\(?([0-9]{4})?\)?"?>'
         results=[]
         for match in re.finditer(pattern, html):
@@ -118,14 +118,11 @@ class MerDB_Scraper(scraper.Scraper):
             results.append(result)
         return results
     
-    def _get_episode_url(self, show_url, season, episode):
-        url = urlparse.urljoin(self.base_url, show_url)
-        html = self.__http_get(url, cache_limit=2)
-        pattern = '"tv_episode_item".+?href="([^"]+/season-%s-episode-%s)">' % (season, episode)
-        match = re.search(pattern, html, re.DOTALL)
-        if match:
-            return match.group(1)
+    def _get_episode_url(self, show_url, season, episode, ep_title):
+        episode_pattern = '"tv_episode_item".+?href="([^"]+/season-%s-episode-%s)">' % (season, episode)
+        title_pattern='class="tv_episode_item".*?href="([^"]+).*?class="tv_episode_name">\s+-\s+([^<]+)'
+        return super(MerDB_Scraper, self)._default_get_episode_url(show_url, season, episode, ep_title, episode_pattern, title_pattern)
         
-    def __http_get(self, url, cache_limit=8):
+    def _http_get(self, url, cache_limit=8):
         return super(MerDB_Scraper, self)._cached_http_get(url, self.base_url, self.timeout, cache_limit=cache_limit)
         

@@ -1,13 +1,27 @@
 __all__ = ['scraper', 'dummy_scraper', 'pw_scraper', 'uflix_scraper', 'watchseries_scraper', 'movie25_scraper', 'merdb_scraper', '2movies_scraper', 'icefilms_scraper', 'afdah_scraper', 
-           'istreamhd_scraper', 'movieshd_scraper', 'simplymovies_scraper', 'yifytv_scraper', 'viooz_scraper']
+           'istreamhd_scraper', 'movieshd_scraper', 'simplymovies_scraper', 'yifytv_scraper', 'viooz_scraper', 'filmstreaming_scraper']
 
 import re
 import os
 import xbmcaddon
 import xbmc
 from salts_lib import log_utils
+from salts_lib.constants import VIDEO_TYPES
 from . import scraper # just to avoid editor warning
 from . import *
+
+class ScraperVideo:
+    def __init__(self, video_type, title, year, season='', episode='', ep_title=''):
+        assert(video_type in (VIDEO_TYPES.__dict__[k] for k in VIDEO_TYPES.__dict__ if not k.startswith('__')))
+        self.video_type=video_type
+        self.title=title
+        self.year=year
+        self.season=season
+        self.episode=episode
+        self.ep_title=ep_title
+    
+    def __str__(self):
+        return '|%s|%s|%s|%s|%s|%s|' % (self.video_type, self.title, self.year, self.season, self.episode, self.ep_title)
 
 def update_settings():
     path=xbmcaddon.Addon().getAddonInfo('path')

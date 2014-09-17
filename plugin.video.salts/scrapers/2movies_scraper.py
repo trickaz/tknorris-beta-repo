@@ -46,7 +46,7 @@ class TwoMovies_Scraper(scraper.Scraper):
     
     def resolve_link(self, link):
         url = urlparse.urljoin(self.base_url, link)
-        html = self.__http_get(url, cookies={'links_tos': '1'}, cache_limit=0)
+        html = self._http_get(url, cookies={'links_tos': '1'}, cache_limit=0)
         match = re.search('<iframe.*?src="([^"]+)', html, re.DOTALL)
         if match:
             return match.group(1)
@@ -54,12 +54,12 @@ class TwoMovies_Scraper(scraper.Scraper):
     def format_source_label(self, item):
         return '[%s] %s (%s/100)' % (item['quality'], item['host'], item['rating'])
     
-    def get_sources(self, video_type, title, year, season='', episode=''):
+    def get_sources(self, video):
         sources=[]
-        source_url=self.get_url(video_type, title, year, season, episode)
+        source_url=self.get_url(video)
         if source_url:
             url = urlparse.urljoin(self.base_url, source_url)
-            html = self.__http_get(url, cache_limit=.5)
+            html = self._http_get(url, cache_limit=.5)
     
             pattern='class="playDiv3".*?href="([^"]+).*?>(.*?)</a>'
             for match in re.finditer(pattern, html, re.DOTALL | re.I):
@@ -75,13 +75,13 @@ class TwoMovies_Scraper(scraper.Scraper):
             
         return sources
 
-    def get_url(self, video_type, title, year, season='', episode=''):
-        return super(TwoMovies_Scraper, self)._default_get_url(video_type, title, year, season, episode)
+    def get_url(self, video):
+        return super(TwoMovies_Scraper, self)._default_get_url(video)
     
     def search(self, video_type, title, year):
         search_url = urlparse.urljoin(self.base_url, '/search/?criteria=title&search_query=')
         search_url += urllib.quote_plus(title)
-        html = self.__http_get(search_url, cache_limit=.25)
+        html = self._http_get(search_url, cache_limit=.25)
         results=[]
         
         # filter the html down to only tvshow or movie results
@@ -107,14 +107,10 @@ class TwoMovies_Scraper(scraper.Scraper):
         
         return results
         
-    def _get_episode_url(self, show_url, season, episode):
-        url = urlparse.urljoin(self.base_url, show_url)
-        html = self.__http_get(url, cache_limit=2)
-        pattern = 'class="linkname\d*" href="([^"]+/watch_episode/[^/]+/%s/%s/)"' % (season, episode)
-        match = re.search(pattern, html)
-        if match:
-            url = match.group(1)
-            return url.replace(self.base_url, '')
+    def _get_episode_url(self, show_url, season, episode, ep_title):
+        episode_pattern = 'class="linkname\d*" href="([^"]+/watch_episode/[^/]+/%s/%s/)"' % (season, episode)
+        title_pattern='class="linkname"\s+href="([^"]+)">Episode_\d+\s+-\s+([^<]+)'
+        return super(TwoMovies_Scraper, self)._default_get_episode_url(show_url, season, episode, ep_title, episode_pattern, title_pattern)
         
-    def __http_get(self, url, cookies=None, cache_limit=8):
+    def _http_get(self, url, cookies=None, cache_limit=8):
         return super(TwoMovies_Scraper, self)._cached_http_get(url, self.base_url, self.timeout, cookies, cache_limit=cache_limit)

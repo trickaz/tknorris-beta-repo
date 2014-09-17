@@ -2,6 +2,12 @@
 	<category label="General">
 	    <setting id="theme" type="enum" label="Addon Theme" values="Shine|Luna Blue" default="0"/>
 		<setting id="parallel_mode" type="enum" label="Parallel Mode" values="Threads|Processes|None" default="0"/>
+		<setting id="calendar-day" type="slider" label="Calendar Start Day (0=Today)" default="0" range="-7,7" option="int"/>
+	    <setting id="sort_progress" type="enum" label="My Next Episodes Sort Order" values="Activity|Title|Most Completed|Least Completed|Recently Aired|Previously Aired" default="0"/>
+	    <setting id="show_unaired_next" type="bool" label="Show unaired episodes in My Next Episodes" default="false"/>
+	    <setting id="show_unaired" type="bool" label="Show unaired episodes in Seasons" default="true"/>
+	    <setting id="unaired_indicator" type="bool" label="     Show an Indicator on Unaired Episodes" default="true" enable="eq(-1,true)"/>
+	    <setting id="show_unknown" type="bool" label="     Show episodes with unknown air date" default="true" enable="eq(-2,false)"/>
 	</category>
 	<category label="Trakt.tv">
 		<setting id="username" type="text" label="Trakt Username" default=""/>
@@ -9,14 +15,11 @@
 	    <setting id="use_https" type="bool" label="Use HTTPS" default="false"/>
 		<setting id="trakt_timeout" type="slider" label="Trakt Timeout (seconds) (0=No Limit)" default="5" range="0,120" option="int"/>
 		<setting id="last_hash" type="text" default="" visible="false"/>
-		<setting id="calendar-day" type="slider" label="Calendar Start Day (0=Today)" default="0" range="-7,7" option="int"/>
 	    <setting id="TV_sub_slug" type="text" visible="false"/>
 	    <setting id="Movies_sub_slug" type="text" visible="false"/>
 	    <setting id="TV_fav_slug" type="text" visible="false"/>
 	    <setting id="Movies_fav_slug" type="text" visible="false"/>
 	    <setting id="remind_count" type="number" default="0" visible="false"/>
-	    <setting id="sort_progress" type="enum" label="My Next Episodes Sort Order" values="Activity|Title|Most Completed|Least Completed|Recently Aired|Previously Aired" default="0"/>
-	    <setting id="show_unaired" type="bool" label="Show unaired episodes in My Next Episodes" default="false"/>
     </category>
     <category label="Library Integration">
 	    <setting id="tvshow-folder" type="folder" label="TV Show Folder"
@@ -34,12 +37,11 @@
 		<setting id="cleanup-subscriptions" type="bool" label="     Prune Ended Shows?" default="false" visible="eq(-8,true)"/>
 	</category>
 	<category label="Source Management">
-		<setting id="disabled_scrapers" type="text" visible="false"/>
         <setting id="auto-play" type="bool" label="Auto-Play Sources" default="false"/>
 		<setting id="source-win" type="labelenum" label="     Source Selection Method" values="Directory|Dialog" default="Dialog"/>
 		<setting id="source_timeout" type="slider" label="Scraper Timeout (seconds) (0=No Limit)" default="5" range="0,120" option="int"/>
 		<setting id="source_results" type="number" label="Maximum Source Results (0=No Limit)" default="0"/>
-		<setting id="source_sort_order" type="text" label="Source Sort Order" enable="false" visible="false"/>
+		<setting id="title-fallback" type="bool" label="Match episode title when season & episode fails" default="true"/>
 		<setting id="enable_sort" type="bool" label="Sort Sources" default="false"/>
 		<setting id="filter-unknown" type="bool" label="Drop Sources with unknown sort values" default="false" visible="eq(-1,true)"/>
 		<setting id="sort1_field" type="enum" label="1st Sort Key" values="None|Source|Quality|Views|Rating" default="0" visible="eq(-2,true)"/>
@@ -50,6 +52,8 @@
 		<setting id="sort3_order" type="enum" label="3rd Sort Key Order" values="Best to Worst|Worst to Best" default="0" visible="eq(-7,true) + !eq(-1,0) + !eq(-3,0) + !eq(-5,0) "/>
 		<setting id="sort4_field" type="enum" label="4th Sort Key" values="None|Source|Quality|Views|Rating" default="0" visible="eq(-8,true) + !eq(-2,0) + !eq(-4,0) + !eq(-6,0)"/>
 		<setting id="sort4_order" type="enum" label="4th Sort Key Order" values="Best to Worst|Worst to Best" default="0" visible="eq(-9,true) + !eq(-1,0) + !eq(-3,0) + !eq(-5,0) + !eq(-7,0)"/>
+		<setting id="source_sort_order" type="text" label="Source Sort Order" enable="false" visible="false"/>
+		<setting id="disabled_scrapers" type="text" visible="false"/>
 	</category>
 	
 	<category label="Scrapers">
