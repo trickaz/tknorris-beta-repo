@@ -1,3 +1,10 @@
+[B]Version 0.0.13[/B]
+- Added alluc.to scraper
+- Fix login bug in istreamhd.org scraper
+- Add repeated scraper timeout detection
+- Added db upgrade boolean to only export/import when needed
+- Got watched indicators working in all lists for TV Shows and Movies
+
 [B]Version 0.0.12[/B]
 - Quick fix to uflix.org scraper
 

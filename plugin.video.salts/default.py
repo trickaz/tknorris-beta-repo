@@ -75,6 +75,9 @@ def main_menu():
             _SALTS.set_setting('remind_count', str(remind_count))
     else:
         _SALTS.set_setting('remind_count', '0')
+    
+    if _SALTS.get_setting('auto-disable') != DISABLE_SETTINGS.OFF:
+        utils.do_disable_check()
 
     _SALTS.add_directory({'mode': MODES.BROWSE, 'section': SECTIONS.MOVIES}, {'title': 'Movies'}, img=art('movies.png'))
     _SALTS.add_directory({'mode': MODES.BROWSE, 'section': SECTIONS.TV}, {'title': 'TV Shows'}, img=art('television.png'))
@@ -114,6 +117,7 @@ def scraper_settings():
     scrapers=utils.relevant_scrapers(None, True, True)
     for i, cls in enumerate(scrapers):
         label = '%s (Provides: %s)' % (cls.get_name(), str(list(cls.provides())).replace("'", ""))
+        label = '%s (Success: %s%%)' % (label, utils.calculate_success(cls.get_name()))
         if not utils.scraper_enabled(cls.get_name()): 
             label = '[COLOR darkred]%s[/COLOR]' % (label)
             toggle_label='Enable Scraper'
@@ -328,7 +332,7 @@ def show_progress():
             if _SALTS.get_setting('show_unaired_next')=='true' or item['next_episode']['first_aired']<=time.time():
                 show=item['show']
                 fanart=item['show']['images']['fanart']
-                date=utils.make_day(time.strftime('%Y-%m-%d', time.localtime(item['next_episode']['first_aired'])))                
+                date=utils.make_day(time.strftime('%Y-%m-%d', time.localtime(item['next_episode']['first_aired'])))      
                 liz, liz_url = make_episode_item(show, item['next_episode'], fanart)
                 folder=_SALTS.get_setting('source-win')=='Directory'
                 label=liz.getLabel()
@@ -339,7 +343,7 @@ def show_progress():
                     liz.setProperty('IsPlayable', 'true')
     
                 xbmcplugin.addDirectoryItem(int(sys.argv[1]), liz_url, liz,isFolder=folder)        
-    xbmcplugin.endOfDirectory(int(sys.argv[1]))
+    xbmcplugin.endOfDirectory(int(sys.argv[1]), cacheToDisc=False)
     
 @url_dispatcher.register(MODES.MANAGE_SUBS, ['section'])
 def manage_subscriptions(section):
@@ -455,7 +459,7 @@ def get_sources(mode, video_type, title, year, slug, season='', episode='', ep_t
     video=ScraperVideo(video_type, title, year, season, episode, ep_title)
     if utils.P_MODE != P_MODES.NONE: q = utils.Queue()
     begin = time.time()
-    
+    fails={}
     for cls in utils.relevant_scrapers(video_type):
         if utils.P_MODE == P_MODES.NONE:
             hosters += cls(max_timeout).get_sources(video)
@@ -463,8 +467,10 @@ def get_sources(mode, video_type, title, year, slug, season='', episode='', ep_t
                 break
         else:
             worker=utils.start_worker(q, utils.parallel_get_sources, [cls, video])
+            db_connection.increment_db_setting('%s_try' % (cls.get_name()))
             worker_count+=1
             workers.append(worker)
+            fails[cls.get_name()]=True
 
     # collect results from workers
     if utils.P_MODE != P_MODES.NONE:
@@ -472,13 +478,16 @@ def get_sources(mode, video_type, title, year, slug, season='', episode='', ep_t
             try:
                 log_utils.log('Calling get with timeout: %s' %(timeout), xbmc.LOGDEBUG)
                 result = q.get(True, timeout)
-                log_utils.log('Got %s Source Results' %(len(result)), xbmc.LOGDEBUG)
+                log_utils.log('Got %s Source Results' %(len(result['hosters'])), xbmc.LOGDEBUG)
                 worker_count -=1
-                hosters += result
+                hosters += result['hosters']
+                del fails[result['name']]
                 if max_timeout>0:
                     timeout = max_timeout - (time.time() - begin)
+                    if timeout<0: timeout=0
             except utils.Empty:
                 log_utils.log('Get Sources Process Timeout', xbmc.LOGWARNING)
+                utils.record_timeouts(fails)
                 break
             
             if max_results> 0 and len(hosters) >= max_results:
@@ -686,6 +695,7 @@ def set_related_url(mode, video_type, title, year, season='', episode='', ep_tit
             related_list.append(related)
         else:
             worker = utils.start_worker(q, utils.parallel_get_url, [cls, video])
+            db_connection.increment_db_setting('%s_try' % (cls.get_name()))
             worker_count += 1
             workers.append(worker)
             related={'class': cls(max_timeout), 'name': cls.get_name(), 'label': '[%s]' % (cls.get_name()), 'url': ''}
@@ -693,6 +703,7 @@ def set_related_url(mode, video_type, title, year, season='', episode='', ep_tit
     
     # collect results from workers
     if utils.P_MODE != P_MODES.NONE:
+        fails = dict.fromkeys([item['name'] for item in related_list], True)
         while worker_count>0:
             try:
                 log_utils.log('Calling get with timeout: %s' %(timeout), xbmc.LOGDEBUG)
@@ -702,11 +713,14 @@ def set_related_url(mode, video_type, title, year, season='', episode='', ep_tit
                 for i, item in enumerate(related_list):
                     if item['name']==result['name']:
                         related_list[i]=result
+                        del fails[result['name']] 
                 worker_count -=1
                 if max_timeout>0:
                     timeout = max_timeout - (time.time() - begin)
+                    if timeout<0: timeout=0
             except utils.Empty:
                 log_utils.log('Get Url Timeout', xbmc.LOGWARNING)
+                utils.record_timeouts(fails)
                 break
         else:
             log_utils.log('All source results received')
@@ -1017,6 +1031,26 @@ def show_pickable_list(slug, pick_label, pick_mode, section):
 def make_dir_from_list(section, list_data, slug=None):
     section_params=utils.get_section_params(section)
     totalItems=len(list_data)
+    
+    if section == SECTIONS.TV:
+        progress = trakt_api.get_progress(full=False)
+        watched={}
+        now = time.time()
+        for item in progress:
+            for id_type in ['imdb_id', 'tvdb_id']:
+                if id_type in item['show'] and item['show'][id_type]:
+                    if item['next_episode'] and item['next_episode']['first_aired']<now:
+                        watched[item['show'][id_type]]=False
+                    else:
+                        watched[item['show'][id_type]]=True
+    else:
+        movie_watched = trakt_api.get_watched(section)
+        watched={}
+        for item in movie_watched:
+            for id_type in ['imdb_id', 'tmdb_id']:
+                if id_type in item and item[id_type]:
+                    watched[item[id_type]] = item['plays']>0
+    
     for show in list_data:
         menu_items=[]
         if slug:
@@ -1028,7 +1062,12 @@ def make_dir_from_list(section, list_data, slug=None):
             queries = {'mode': MODES.ADD_TO_LIST, 'section': section_params['section'], 'slug': sub_slug}
             queries.update(utils.show_id(show))
             menu_items.append(('Subscribe', 'RunPlugin(%s)' % (_SALTS.build_plugin_url(queries))), )
-
+        
+        if 'imdb_id' in show: show['watched'] = watched.get(show['imdb_id'], False)
+        elif 'tvdb_id' in show: show['watched'] = watched.get(show['tvdb_id'], False)
+        elif 'tmdb_id' in show: show['watched'] = watched.get(show['tmdb_id'], False)
+        if not show['watched']: log_utils.log('Setting watched status on %s (%s): %s' % (show['title'], show['year'], show['watched']))
+            
         liz, liz_url =make_item(section_params, show, menu_items)
         
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), liz_url, liz, isFolder=section_params['folder'], totalItems=totalItems)
@@ -1068,7 +1107,7 @@ def make_dir_from_cal(mode, start_date, days):
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
 def make_episode_item(show, episode, fanart, show_subs=True):
-    log_utils.log('Make Episode: Show: %s, Episode: %s, Fanart: %s, Show Subs: %s' % (show, episode, fanart, show_subs))
+    log_utils.log('Make Episode: Show: %s, Episode: %s, Fanart: %s, Show Subs: %s' % (show, episode, fanart, show_subs), xbmc.LOGDEBUG)
     show['title']=re.sub(' \(\d{4}\)$','',show['title'])
     if 'episode' in episode: episode_num=episode['episode']
     else:  episode_num=episode['number']
@@ -1132,7 +1171,6 @@ def make_item(section_params, show, menu_items=None):
  
     if section_params['section']==SECTIONS.TV:
         queries = {'mode': section_params['next_mode'], 'slug': slug, 'fanart': liz.getProperty('fanart_image')}
-        if 'playcount' in info: del info['playcount'] # remove playcount from tv shows
         info['TVShowTitle']=info['title']
     else:
         queries = {'mode': section_params['next_mode'], 'video_type': section_params['video_type'], 'title': show['title'], 'year': show['year'], 'slug': slug}
@@ -1171,6 +1209,8 @@ def make_item(section_params, show, menu_items=None):
     menu_items.append(('Set Related Url (Manual)', 'RunPlugin(%s)' % (_SALTS.build_plugin_url(queries))), )
     liz.addContextMenuItems(menu_items, replaceItems=True)
  
+    liz.setProperty('resumetime',str(0))
+    liz.setProperty('totaltime',str(1))
     return liz, liz_url
 
 def main(argv=None):

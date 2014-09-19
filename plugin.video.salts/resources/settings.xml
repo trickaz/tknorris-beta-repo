@@ -38,10 +38,14 @@
 	</category>
 	<category label="Source Management">
         <setting id="auto-play" type="bool" label="Auto-Play Sources" default="false"/>
-		<setting id="source-win" type="labelenum" label="     Source Selection Method" values="Directory|Dialog" default="Dialog"/>
+		<setting id="source-win" type="labelenum" label="     Source Selection Method" values="Directory|Dialog" default="Dialog"/>		
 		<setting id="source_timeout" type="slider" label="Scraper Timeout (seconds) (0=No Limit)" default="5" range="0,120" option="int"/>
 		<setting id="source_results" type="number" label="Maximum Source Results (0=No Limit)" default="0"/>
 		<setting id="title-fallback" type="bool" label="Match episode title when season & episode fails" default="true"/>
+	    <setting id="last_check" type="number" default="0" visible="false"/>
+		<setting id="auto-disable" type="enum" label="Automatically disable slow scrapers" values="Off|Prompt|On" default="1"/>
+		<setting id="disable-freq" type="slider" label="     Check Frequency (requests)" default="100" range="100,50,1000" option="int" enable="!eq(-1,0)"/>
+		<setting id="disable-thresh" type="slider" label="     Minimum Allowed Success Percentage" default="50" range="0,100" option="int" enable="!eq(-2,0)"/>
 		<setting id="enable_sort" type="bool" label="Sort Sources" default="false"/>
 		<setting id="filter-unknown" type="bool" label="Drop Sources with unknown sort values" default="false" visible="eq(-1,true)"/>
 		<setting id="sort1_field" type="enum" label="1st Sort Key" values="None|Source|Quality|Views|Rating" default="0" visible="eq(-2,true)"/>
@@ -53,7 +57,6 @@
 		<setting id="sort4_field" type="enum" label="4th Sort Key" values="None|Source|Quality|Views|Rating" default="0" visible="eq(-8,true) + !eq(-2,0) + !eq(-4,0) + !eq(-6,0)"/>
 		<setting id="sort4_order" type="enum" label="4th Sort Key Order" values="Best to Worst|Worst to Best" default="0" visible="eq(-9,true) + !eq(-1,0) + !eq(-3,0) + !eq(-5,0) + !eq(-7,0)"/>
 		<setting id="source_sort_order" type="text" label="Source Sort Order" enable="false" visible="false"/>
-		<setting id="disabled_scrapers" type="text" visible="false"/>
 	</category>
 	
 	<category label="Scrapers">

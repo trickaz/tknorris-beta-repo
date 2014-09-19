@@ -288,10 +288,11 @@ def parallel_get_sources(q, cls, video):
     elif P_MODE == P_MODES.PROCESSES:
         worker=multiprocessing.current_process()
         
-    log_utils.log('Getting %s sources using %s' % (cls.get_name(), worker), xbmc.LOGDEBUG)
+    log_utils.log('Starting %s (%s) for %s sources' % (worker.name, worker, cls.get_name()), xbmc.LOGDEBUG)
     hosters=scraper_instance.get_sources(video)
     log_utils.log('%s returned %s sources from %s' % (cls.get_name(), len(hosters), worker), xbmc.LOGDEBUG)
-    q.put(hosters)
+    result = {'name': cls.get_name(), 'hosters': hosters}
+    q.put(result)
 
 def parallel_get_url(q, cls, video):
     scraper_instance=cls(int(ADDON.get_setting('source_timeout')))
@@ -300,7 +301,7 @@ def parallel_get_url(q, cls, video):
     elif P_MODE == P_MODES.PROCESSES:
         worker=multiprocessing.current_process()
         
-    log_utils.log('Getting %s url using %s' % (cls.get_name(), worker), xbmc.LOGDEBUG)
+    log_utils.log('Starting %s (%s) for %s url' % (worker.name, worker, cls.get_name()), xbmc.LOGDEBUG)
     url=scraper_instance.get_url(video)
     log_utils.log('%s returned url %s from %s' % (cls.get_name(), url, worker), xbmc.LOGDEBUG)
     related={}
@@ -498,3 +499,45 @@ def format_episode_label(label, season, episode, srts):
         label = label[:-2]
         label+= ')[/COLOR]'
     return label
+
+def calculate_success(name):
+    tries=db_connection.get_setting('%s_try' % (name))
+    fail = db_connection.get_setting('%s_fail' % (name))
+    tries = int(tries) if tries else 0
+    fail = int(fail) if fail else 0
+    rate = int(round((fail*100.0)/tries)) if tries>0 else 0
+    rate = 100 - rate
+    return rate
+
+def record_timeouts(fails):
+    for key in fails:
+        if fails[key]==True:
+            log_utils.log('Recording Timeout of %s' % (key))
+            db_connection.increment_db_setting('%s_fail' % key)
+
+def do_disable_check():
+    scrapers=relevant_scrapers()
+    auto_disable=ADDON.get_setting('auto-disable')
+    check_freq=int(ADDON.get_setting('disable-freq'))
+    disable_thresh=int(ADDON.get_setting('disable-thresh'))
+    for cls in scrapers:
+        last_check = db_connection.get_setting('%s_check' % (cls.get_name()))
+        last_check = int(last_check) if last_check else 0
+        tries=db_connection.get_setting('%s_try' % (cls.get_name()))
+        tries = int(tries) if tries else 0
+        if tries>0 and tries/check_freq>last_check/check_freq:
+            db_connection.set_setting('%s_check' % (cls.get_name()), str(tries))
+            success_rate=calculate_success(cls.get_name())
+            if success_rate<disable_thresh:
+                if auto_disable == DISABLE_SETTINGS.ON:
+                    ADDON.set_setting('%s-enable' % (cls.get_name()), 'false')
+                    builtin = "XBMC.Notification(%s,[COLOR blue]%s[/COLOR] Scraper Automatically Disabled, 5000, %s)" % (ADDON.get_name(), cls.get_name(), ICON_PATH)
+                    xbmc.executebuiltin(builtin)
+                elif auto_disable == DISABLE_SETTINGS.PROMPT:
+                    dialog=xbmcgui.Dialog()
+                    line1='The [COLOR blue]%s[/COLOR] scraper timed out on [COLOR red]%s%%[/COLOR] of %s requests'  % (cls.get_name(), 100-success_rate, tries)
+                    line2= 'Each timeout wastes system resources and time.'
+                    line3='([I]If you keep it enabled, consider increasing the scraper timeout.[/I])'
+                    ret = dialog.yesno('SALTS', line1, line2, line3, 'Keep Enabled', 'Disable It')
+                    if ret:
+                        ADDON.set_setting('%s-enable' % (cls.get_name()), 'false')

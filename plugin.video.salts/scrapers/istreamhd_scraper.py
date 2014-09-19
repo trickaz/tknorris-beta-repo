@@ -72,7 +72,10 @@ class IStreamHD_Scraper(scraper.Scraper):
             else:
                 hoster['quality']=QUALITIES.HIGH
             match = re.search('Views</strong>:\s+(\d+)\s+', html, re.I)
-            hoster['views']=match.group(1)
+            if match:
+                hoster['views']=match.group(1)
+            else:
+                hoster['views']=None
             hoster['rating']=None
             hoster['host']='vk.com'
             hoster['url']=source_url.replace('/get/item.php', '/lib/get_embed.php')
@@ -128,7 +131,7 @@ class IStreamHD_Scraper(scraper.Scraper):
         if re.search('<h1>Please logon</h1>', html):
             log_utils.log('Logging in for url (%s)' % (url), xbmc.LOGDEBUG)
             self.__login()
-            html=super(IStreamHD_Scraper, self)._cached_http_get(url, self.base_url, self.timeout, data=data, cache_limit=cache_limit)
+            html=super(IStreamHD_Scraper, self)._cached_http_get(url, self.base_url, self.timeout, data=data, cache_limit=0)
         
         return html
 
