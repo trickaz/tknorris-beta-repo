@@ -411,13 +411,14 @@ def search(section):
     
 @url_dispatcher.register(MODES.SEARCH_RESULTS, ['section', 'query'])
 def search_results(section, query):
-    section_params=utils.get_section_params(section)
+#     section_params=utils.get_section_params(section)
     results = trakt_api.search(section, query)
-    totalItems=len(results)
-    for result in results:
-        liz, liz_url = make_item(section_params, result)
-        xbmcplugin.addDirectoryItem(int(sys.argv[1]), liz_url, liz, isFolder=section_params['folder'], totalItems=totalItems)
-    xbmcplugin.endOfDirectory(int(sys.argv[1]))
+    make_dir_from_list(section, results)
+#     totalItems=len(results)
+#     for result in results:
+#         liz, liz_url = make_item(section_params, result)
+#         xbmcplugin.addDirectoryItem(int(sys.argv[1]), liz_url, liz, isFolder=section_params['folder'], totalItems=totalItems)
+#     xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
 @url_dispatcher.register(MODES.SEASONS, ['slug', 'fanart'])
 def browse_seasons(slug, fanart):
@@ -805,6 +806,14 @@ def remove_many_from_list(section, items, slug):
         response=trakt_api.remove_from_list(slug, items)
     return response
     
+@url_dispatcher.register(MODES.ADD_TO_COLL, ['section', 'id_type', 'show_id'])
+def add_to_collection(section, id_type, show_id):
+    item={id_type: show_id}
+    trakt_api.add_to_collection(section, item)
+    builtin = "XBMC.Notification(%s,Item Added to Collection, 2000, %s)" % (_SALTS.get_name(), ICON_PATH)
+    xbmc.executebuiltin(builtin)
+    #xbmc.executebuiltin("XBMC.Container.Refresh")
+
 @url_dispatcher.register(MODES.ADD_TO_LIST, ['section', 'id_type', 'show_id'], ['slug'])
 def add_to_list(section, id_type, show_id, slug=None):
     item={'type': TRAKT_SECTIONS[section][:-1], id_type: show_id}
@@ -832,6 +841,16 @@ def copy_list(section, slug, username):
     response=add_many_to_list(section, copy_items)
     builtin = "XBMC.Notification(%s,List Copied: (A:%s/ E:%s/ S:%s), 5000, %s)" % (_SALTS.get_name(), response['inserted'], response['already_exist'], response['skipped'], ICON_PATH)
     xbmc.executebuiltin(builtin)
+
+@ url_dispatcher.register(MODES.TOGGLE_WATCHED, ['section', 'id_type', 'show_id'], ['watched', 'season', 'episode'])
+def toggle_watched(section, id_type, show_id, watched=True, season='', episode=''):
+    log_utils.log('In Watched: |%s|%s|%s|%s|%s|%s|' % (section, id_type, show_id, season, episode, watched), xbmc.LOGDEBUG)
+    item = {id_type: show_id}
+    trakt_api.set_watched(section, item, season, episode, watched)
+    w_str='Watched' if watched else 'Unwatched'
+    builtin = "XBMC.Notification(%s,Marked as %s,5000,%s)" % (_SALTS.get_name(), w_str, ICON_PATH)
+    xbmc.executebuiltin(builtin)
+    xbmc.executebuiltin("XBMC.Container.Refresh")
 
 @url_dispatcher.register(MODES.UPDATE_SUBS)
 def update_subscriptions():
@@ -1031,9 +1050,10 @@ def show_pickable_list(slug, pick_label, pick_mode, section):
 def make_dir_from_list(section, list_data, slug=None):
     section_params=utils.get_section_params(section)
     totalItems=len(list_data)
+    cache_watched = _SALTS.get_setting('cache_watched')=='true'
     
     if section == SECTIONS.TV:
-        progress = trakt_api.get_progress(full=False)
+        progress = trakt_api.get_progress(full=False, cached=cache_watched)
         watched={}
         now = time.time()
         for item in progress:
@@ -1044,7 +1064,7 @@ def make_dir_from_list(section, list_data, slug=None):
                     else:
                         watched[item['show'][id_type]]=True
     else:
-        movie_watched = trakt_api.get_watched(section)
+        movie_watched = trakt_api.get_watched(section, cached=cache_watched)
         watched={}
         for item in movie_watched:
             for id_type in ['imdb_id', 'tmdb_id']:
@@ -1066,7 +1086,7 @@ def make_dir_from_list(section, list_data, slug=None):
         if 'imdb_id' in show: show['watched'] = watched.get(show['imdb_id'], False)
         elif 'tvdb_id' in show: show['watched'] = watched.get(show['tvdb_id'], False)
         elif 'tmdb_id' in show: show['watched'] = watched.get(show['tmdb_id'], False)
-        if not show['watched']: log_utils.log('Setting watched status on %s (%s): %s' % (show['title'], show['year'], show['watched']))
+        if not show['watched']: log_utils.log('Setting watched status on %s (%s): %s' % (show['title'], show['year'], show['watched']), xbmc.LOGDEBUG)
             
         liz, liz_url =make_item(section_params, show, menu_items)
         
@@ -1147,9 +1167,22 @@ def make_episode_item(show, episode, fanart, show_subs=True):
         menu_items.append(('Select Source', runstring), )
         
     menu_items.append(('Show Information', 'XBMC.Action(Info)'), )
+
+    if 'watched' in episode and episode['watched']:
+        watched=False
+        label='Mark as Unwatched'
+    else:
+        watched=True
+        label='Mark as Watched'
+        
+    queries = {'mode': MODES.TOGGLE_WATCHED, 'section': SECTIONS.TV, 'season': episode['season'], 'episode': episode_num, 'watched': watched}
+    queries.update(utils.show_id(show))
+    menu_items.append((label, 'RunPlugin(%s)' % (_SALTS.build_plugin_url(queries))), )
+
     queries = {'mode': MODES.SET_URL_MANUAL, 'video_type': VIDEO_TYPES.EPISODE, 'title': show['title'], 'year': show['year'], 'season': episode['season'], 
                'episode': episode_num, 'ep_title': episode['title']}
     menu_items.append(('Set Related Url (Manual)', 'RunPlugin(%s)' % (_SALTS.build_plugin_url(queries))), )
+ 
     liz.addContextMenuItems(menu_items, replaceItems=True)
     return liz, liz_url
 
@@ -1188,9 +1221,15 @@ def make_item(section_params, show, menu_items=None):
         
     menu_items.append(('Show Information', 'XBMC.Action(Info)'), )
     if VALID_ACCOUNT:
+        show_id=utils.show_id(show)
+        queries = {'mode': MODES.ADD_TO_COLL, 'section': section_params['section']}
+        queries.update(show_id)
+        menu_items.append(('Add to Collection', 'RunPlugin(%s)' % (_SALTS.build_plugin_url(queries))), )
+        
         queries = {'mode': MODES.ADD_TO_LIST, 'section': section_params['section']}
-        queries.update(utils.show_id(show))
+        queries.update(show_id)
         menu_items.append(('Add to List', 'RunPlugin(%s)' % (_SALTS.build_plugin_url(queries))), )
+        
     queries = {'mode': MODES.ADD_TO_LIBRARY, 'video_type': section_params['video_type'], 'title': show['title'], 'year': show['year'], 'slug': slug}
     menu_items.append(('Add to Library', 'RunPlugin(%s)' % (_SALTS.build_plugin_url(queries))), )
 
@@ -1198,6 +1237,19 @@ def make_item(section_params, show, menu_items=None):
         queries = {'mode': MODES.PLAY_TRAILER, 'stream_url': info['trailer']}
         menu_items.append(('Play Trailer', 'RunPlugin(%s)' % (_SALTS.build_plugin_url(queries))), )
         
+    if VALID_ACCOUNT:
+        if 'watched' in show and show['watched']:
+            watched=False
+            label='Mark as Unwatched'
+        else:
+            watched=True
+            label='Mark as Watched'
+        
+        if watched or section_params['section']==SECTIONS.MOVIES:
+            queries = {'mode': MODES.TOGGLE_WATCHED, 'section': section_params['section'], 'watched': watched}
+            queries.update(show_id)
+            menu_items.append((label, 'RunPlugin(%s)' % (_SALTS.build_plugin_url(queries))), )
+
     if section_params['section']==SECTIONS.TV and _SALTS.get_setting('enable-subtitles')=='true':
         queries = {'mode': MODES.EDIT_TVSHOW_ID, 'title': show['title'], 'year': show['year']}
         runstring = 'RunPlugin(%s)' % _SALTS.build_plugin_url(queries)

@@ -1,3 +1,11 @@
+[B]Version 0.0.14[/B]
+- Add option to disable db upgrades during XBMC startup
+- Add option to add tvshows and movies to collection
+- Add mark as watched/unwatched; add option to turn watched caching on and off
+- Fall back to thread mode when not supported on platform
+- Added onlinemovies.pro scraper
+- Added onclickmovies.ag scraper
+
 [B]Version 0.0.13[/B]
 - Added alluc.to scraper
 - Fix login bug in istreamhd.org scraper

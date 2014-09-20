@@ -33,9 +33,17 @@ if P_MODE == P_MODES.THREADS:
     import threading
     from Queue import Queue, Empty
 elif P_MODE == P_MODES.PROCESSES:
-    import multiprocessing
-    from multiprocessing import Queue
-    from Queue import Empty
+    try:
+        import multiprocessing
+        from multiprocessing import Queue
+        from Queue import Empty
+        raise ImportError
+    except ImportError:
+        import threading
+        from Queue import Queue, Empty
+        P_MODE = P_MODES.THREADS
+        builtin = 'XBMC.Notification(%s,Process Mode not supported on this platform falling back to Thread Mode, 7500, %s)'
+        xbmc.executebuiltin(builtin % (ADDON.get_name(), ICON_PATH))
 
 trakt_api=Trakt_API(username,password, use_https, trakt_timeout)
 db_connection=DB_Connection()

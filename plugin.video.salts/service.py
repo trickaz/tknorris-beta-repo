@@ -27,7 +27,8 @@ ADDON = xbmcaddon.Addon(id='plugin.video.salts')
 log_utils.log('Service: Installed Version: %s' % (ADDON.getAddonInfo('version')))
 
 db_connection = DB_Connection()
-db_connection.init_database()
+if ADDON.getSetting('use_remote_db') == 'false' or ADDON.getSetting('enable_upgrade') == 'true':
+    db_connection.init_database()
 
 class Service(xbmc.Player):
     def __init__(self, *args, **kwargs):

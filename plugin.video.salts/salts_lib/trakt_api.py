@@ -79,6 +79,31 @@ class Trakt_API():
     def add_to_list(self, slug, items):
         return self.__manage_list('add', slug, items)
         
+    def add_to_collection(self, section, item):
+        url = '/%s/library/%s' % (TRAKT_SECTIONS[section][:-1], API_KEY)
+        if section == SECTIONS.TV:
+            data = item
+        else:
+            data = {'movies': [item]}
+        return self.__call_trakt(url, extra_data = data, cache_limit=0)
+        
+    def set_watched(self, section, item, season='', episode='', watched=True):
+        video_type = TRAKT_SECTIONS[section][:-1]
+        if section == SECTIONS.MOVIES:
+            data = {'movies': [item]}
+        else:
+            data = item
+            if episode:
+                video_type += '/episode'
+                data.update({'episodes': [{'season': season, 'episode': episode}]})
+            elif season:
+                video_type += '/season.json'
+                data.update('season', season)
+            
+        w_str = 'seen' if watched else 'unseen'
+        url = '/%s/%s/%s' % (video_type, w_str, API_KEY)
+        return self.__call_trakt(url, extra_data=data, cache_limit=0)
+    
     def remove_from_list(self, slug, items):
         return self.__manage_list('delete', slug, items)
     
@@ -150,14 +175,16 @@ class Trakt_API():
         url='/user/library/%s/collection.json/%s/%s' % (TRAKT_SECTIONS[section], API_KEY, self.username)
         return self.__call_trakt(url, cache_limit=0)
     
-    def get_watched(self, section):
+    def get_watched(self, section, cached=True):
         url='/user/library/%s/watched.json/%s/%s/min' % (TRAKT_SECTIONS[section], API_KEY, self.username)
-        return self.__call_trakt(url, cache_limit=0)
+        cache_limit = .15 if cached else 0
+        return self.__call_trakt(url, cache_limit=cache_limit)
         
-    def get_progress(self, sort=TRAKT_SORT.ACTIVITY, full=True):
+    def get_progress(self, sort=TRAKT_SORT.ACTIVITY, full=True, cached=True):
         url='/user/progress/watched.json/%s/%s/all/%s' % (API_KEY, self.username, sort)
         if full: url += '/full'
-        return self.__call_trakt(url)
+        cache_limit = .15 if cached else 0
+        return self.__call_trakt(url, cache_limit=cache_limit)
     
     def get_slug(self, url):
         pattern = 'https?://trakt\.tv/(?:show|movie)/'

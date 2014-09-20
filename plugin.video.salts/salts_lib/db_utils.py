@@ -29,7 +29,7 @@ def enum(**enums):
 
 DB_TYPES= enum(MYSQL='mysql', SQLITE='sqlite')
 CSV_MARKERS = enum(REL_URL='***REL_URL***', OTHER_LISTS='***OTHER_LISTS***')
-TRIG_DB_UPG = True
+TRIG_DB_UPG = False
 
 _SALTS = Addon('plugin.video.salts')
 
