@@ -1,3 +1,7 @@
+[B]Version 0.0.15[/B]
+- Fix pathnames that have invalid characters in them
+- Fix accidentally turning MySQL on by default.
+
 [B]Version 0.0.14[/B]
 - Add option to disable db upgrades during XBMC startup
 - Add option to add tvshows and movies to collection

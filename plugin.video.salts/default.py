@@ -994,7 +994,8 @@ def add_to_library(video_type, title, year, slug, require_source=False):
                 ep_num = episode['episode']
                 filename = utils.filename_from_title(show['title'], video_type)
                 filename = filename % ('%02d' % int(season_num), '%02d' % int(ep_num))
-                final_path = os.path.join(save_path, show['title'], 'Season %s' % (season_num), filename)
+                show_folder=xbmc.makeLegalFilename(show['title'])
+                final_path = os.path.join(save_path, show_folder, 'Season %s' % (season_num), filename)
                 strm_string = _SALTS.build_plugin_url({'mode': MODES.GET_SOURCES, 'video_type': VIDEO_TYPES.EPISODE, 'title': title, 'year': year, 'season': season_num, 
                                                        'episode': ep_num, 'slug': slug, 'ep_title': episode['title'], 'dialog': True})
                 write_strm(strm_string, final_path, VIDEO_TYPES.EPISODE, title, year, season_num, ep_num, require_source)
