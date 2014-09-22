@@ -26,7 +26,7 @@ MODES=__enum(MAIN='main', BROWSE='browse', TRENDING='trending', RECOMMEND='recom
            TOGGLE_SCRAPER='toggle_scraper', RESET_DB='reset_db', FLUSH_CACHE='flush_cache', RESOLVE_SOURCE='resolve_source', SEARCH_RESULTS='search_results', 
            MOVE_SCRAPER = 'scraper_move', FRIENDS_EPISODE='friends_episode', EDIT_TVSHOW_ID='edit_id', SELECT_SOURCE='select_source', SHOW_COLLECTION='show_collection',
            SHOW_PROGRESS='show_progress', PLAY_TRAILER='play_trailer', RENAME_LIST='rename_list', EXPORT_DB='export_db', IMPORT_DB='import_db', COPY_LIST='copy_list',
-           REMOVE_LIST='remove_list', ADD_TO_COLL='add_to_collection', TOGGLE_WATCHED='toggle_watched')
+           REMOVE_LIST='remove_list', ADD_TO_COLL='add_to_collection', TOGGLE_WATCHED='toggle_watched', RATE='rate', FORCE_REFRESH='force_refresh')
 SECTIONS=__enum(TV='TV', MOVIES='Movies')
 VIDEO_TYPES = __enum(TVSHOW='TV Show', MOVIE='Movie', EPISODE='Episode', SEASON='Season')
 TRAKT_SECTIONS = {SECTIONS.TV: 'shows', SECTIONS.MOVIES: 'movies'}

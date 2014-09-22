@@ -219,7 +219,7 @@ class Scraper(object):
         return html
 
     def _set_cookies(self, base_url, cookies):
-        domain=urlparse.urlparse(base_url).netloc
+        domain=urlparse.urlsplit(base_url).hostname
         cj=cookielib.LWPCookieJar(COOKIEFILE)
         opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
         urllib2.install_opener(opener)

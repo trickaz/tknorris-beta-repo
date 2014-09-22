@@ -1,3 +1,11 @@
+[B]Version 0.0.16[/B]
+- Fix trending when no valid trakt account is configured
+- Added myvideolinks.eu scraper
+- Fix incorrect cache on some trakt calls
+- Add function to rate movies; tvshow; and episodes on trakt
+- Added Marquerite's Iconic theme (WIP)
+- Added filmikz scraper
+
 [B]Version 0.0.15[/B]
 - Fix pathnames that have invalid characters in them
 - Fix accidentally turning MySQL on by default.

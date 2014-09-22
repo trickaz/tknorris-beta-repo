@@ -51,14 +51,15 @@ class Trakt_API():
         url='/account/test/%s' % (API_KEY)
         return self.__call_trakt(url, cache_limit=0)
         
-    def show_list(self, slug, section, username=None):
+    def show_list(self, slug, section, username=None, cached=True):
         if not username: 
             username = self.username
             cache_limit=0 # don't cache user's own lists at all
+            cached=False
         else:
             cache_limit=1 # cache other user's list for one hour
         url='/user/list.json/%s/%s/%s' % (API_KEY, username, slug)
-        list_data=self.__call_trakt(url, cache_limit=cache_limit)
+        list_data=self.__call_trakt(url, cache_limit=cache_limit, cached=cached)
         list_header = list_data.copy()
         del(list_header['items'])
         items=[]
@@ -132,20 +133,20 @@ class Trakt_API():
         url='/activity/friends.json/%s/%s' % (API_KEY, types)
         return self.__call_trakt(url)
         
-    def get_calendar(self, start_date=None):
+    def get_calendar(self, start_date=None, cached=True):
         url='/calendar/shows.json/%s' % (API_KEY)
         if start_date: url += '/%s' % (start_date)
-        return self.__call_trakt(url)
+        return self.__call_trakt(url, cached=cached)
     
-    def get_premieres(self, start_date=None):
+    def get_premieres(self, start_date=None, cached=True):
         url='/calendar/premieres.json/%s' % (API_KEY)
         if start_date: url += '/%s' % (start_date)
-        return self.__call_trakt(url)
+        return self.__call_trakt(url, cached=cached)
     
-    def get_my_calendar(self, start_date=None):
+    def get_my_calendar(self, start_date=None, cached=True):
         url='/user/calendar/shows.json/%s/%s' % (API_KEY, self.username)
         if start_date: url += '/%s' % (start_date)
-        return self.__call_trakt(url)
+        return self.__call_trakt(url, cached=cached)
         
     def get_seasons(self, slug):
         url = '/show/seasons.json/%s/%s' % (API_KEY, slug)
@@ -171,21 +172,34 @@ class Trakt_API():
         url='/search/%s.json/%s?query=%s' % (TRAKT_SECTIONS[section], API_KEY, urllib.quote_plus(query))
         return self.__call_trakt(url)
     
-    def get_collection(self, section):
+    def get_collection(self, section, cached=True):
         url='/user/library/%s/collection.json/%s/%s' % (TRAKT_SECTIONS[section], API_KEY, self.username)
-        return self.__call_trakt(url, cache_limit=0)
+        return self.__call_trakt(url, cached=cached)
     
     def get_watched(self, section, cached=True):
         url='/user/library/%s/watched.json/%s/%s/min' % (TRAKT_SECTIONS[section], API_KEY, self.username)
-        cache_limit = .15 if cached else 0
-        return self.__call_trakt(url, cache_limit=cache_limit)
+        return self.__call_trakt(url, cached=cached)
         
     def get_progress(self, sort=TRAKT_SORT.ACTIVITY, full=True, cached=True):
         url='/user/progress/watched.json/%s/%s/all/%s' % (API_KEY, self.username, sort)
         if full: url += '/full'
-        cache_limit = .15 if cached else 0
-        return self.__call_trakt(url, cache_limit=cache_limit)
+        return self.__call_trakt(url, cached=cached)
     
+    def rate(self, section, item, rating, season='', episode=''):
+        data = item
+        if section == SECTIONS.MOVIES:
+            rating_type = 'movie'
+        else:
+            if season and episode:
+                rating_type = 'episode'
+                data.update({'season': season, 'episode': episode})
+            else:
+                rating_type = 'show'
+                
+        url ='/rate/%s/%s' % (rating_type, API_KEY)
+        data['rating']=rating
+        self.__call_trakt(url, extra_data=data, cache_limit=0)
+        
     def get_slug(self, url):
         pattern = 'https?://trakt\.tv/(?:show|movie)/'
         url=re.sub(pattern, '', url.lower())
@@ -203,7 +217,8 @@ class Trakt_API():
         extra_data={TRAKT_SECTIONS[section]: items}
         return self.__call_trakt(url, extra_data, cache_limit=0)
     
-    def __call_trakt(self, url, extra_data=None, cache_limit=.25):
+    def __call_trakt(self, url, extra_data=None, cache_limit=.25, cached=True):
+        if not cached: cache_limit = 0
         data={'username': self.username, 'password': self.sha1password}
         if extra_data: data.update(extra_data)
         url = '%s%s%s' % (self.protocol, BASE_URL, url)
@@ -221,7 +236,9 @@ class Trakt_API():
             response=json.loads(result)
 
             if 'status' in response and response['status']=='failure':
-                raise TraktError(response['message'])
+                if 'message' in response: raise TraktError(response['message'])
+                if 'error' in response: raise TraktError(response['error'])
+                else: raise TraktError()
             else:
                 #log_utils.log('Trakt Response: %s' % (response), xbmc.LOGDEBUG)
                 return response

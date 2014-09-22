@@ -120,7 +120,9 @@ def make_info(item, show=''):
     info['title']=item['title']
     if 'overview' in item: info['plot']=info['plotoutline']=item['overview']
     if 'runtime' in item: info['duration']=item['runtime']
-    if 'imdb_id' in item: info['code']=item['imdb_id']
+    if 'imdb_id' in item: info['code']=info['imdbnumber']=info['imdb_id']=item['imdb_id']
+    if 'tmdb_id' in item: info['tmdb_id']=item['tmdb_id']
+    if 'tvdb_id' in item: info['tvdb_id']=item['tvdb_id']
     if 'certification' in item: info['mpaa']=item['certification']
     if 'year' in item: info['year']=item['year']
     if 'season' in item: info['season']=item['season']
@@ -172,7 +174,9 @@ def make_info(item, show=''):
     # override item params with show info if it exists
     if 'certification' in show: info['mpaa']=show['certification']
     if 'year' in show: info['year']=show['year']
-    if 'imdb_id' in show: info['code']=show['imdb_id']
+    if 'imdb_id' in show: info['code']=info['imdbnumber']=info['imdb_id']=show['imdb_id']
+    if 'tmdb_id' in show: info['tmdb_id']=show['tmdb_id']
+    if 'tvdb_id' in show: info['tvdb_id']=show['tvdb_id']
     if 'runtime' in show: info['duration']=show['runtime']
     if 'title' in show: info['tvshowtitle']=show['title']
     if 'people' in show: info['cast']=[actor['name'] for actor in show['people']['actors'] if actor['name']]
@@ -229,14 +233,14 @@ def get_sort_key(item):
                 value=item[field]
             
             if value in SORT_KEYS[field]:
-                item_sort_key.append(sign*SORT_KEYS[field][value])
+                item_sort_key.append(sign*int(SORT_KEYS[field][value]))
             else: # assume all unlisted values sort as worst
                 item_sort_key.append(sign*-1)
         else:
             if item[field] is None:
                 item_sort_key.append(sign*-1)
             else:
-                item_sort_key.append(sign*item[field])
+                item_sort_key.append(sign*int(item[field]))
     #print 'item: %s sort_key: %s' % (item, item_sort_key)
     return tuple(item_sort_key)
 
