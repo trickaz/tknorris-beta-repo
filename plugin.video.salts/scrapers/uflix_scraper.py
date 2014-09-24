@@ -127,10 +127,10 @@ class UFlix_Scraper(scraper.Scraper):
         
         return results
         
-    def _get_episode_url(self, show_url, season, episode, ep_title):
-        episode_pattern = 'class="link"\s+href="([^"]+/show/[^"]+/season/%s/episode/%s)"' % (season, episode)
+    def _get_episode_url(self, show_url, video):
+        episode_pattern = 'class="link"\s+href="([^"]+/show/[^"]+/season/%s/episode/%s)"' % (video.season, video.episode)
         title_pattern='class="link"\s+href="([^"]+).*?class="tv_episode_name">.*?Episode\s+\d+\s+-\s+([^<]+)'
-        return super(UFlix_Scraper, self)._default_get_episode_url(show_url, season, episode, ep_title, episode_pattern, title_pattern)
+        return super(UFlix_Scraper, self)._default_get_episode_url(show_url, video, episode_pattern, title_pattern)
         
     def _http_get(self, url, cache_limit=8):
         return super(UFlix_Scraper, self)._cached_http_get(url, self.base_url, self.timeout, cache_limit=cache_limit)

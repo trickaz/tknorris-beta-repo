@@ -105,6 +105,7 @@ class DB_Connection():
     
     def get_cached_url(self, url, cache_limit=8):
         html=''
+        created=0
         now = time.time()
         limit = 60 * 60 * cache_limit
         sql = 'SELECT * FROM url_cache WHERE url = ?'
@@ -115,7 +116,7 @@ class DB_Connection():
             age = now - created
             if age < limit:
                 html=rows[0][1]
-        return html
+        return created, html
     
     def add_other_list(self, section, username, slug, name=None):
         sql = 'REPLACE INTO other_lists (section, username, slug, name) VALUES (?, ?, ?, ?)'

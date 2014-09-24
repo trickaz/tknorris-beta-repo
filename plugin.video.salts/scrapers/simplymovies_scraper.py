@@ -92,14 +92,14 @@ class SimplyMovies_Scraper(scraper.Scraper):
                 results.append(result)
         return results
     
-    def _get_episode_url(self, show_url, season, episode, ep_title):
+    def _get_episode_url(self, show_url, video):
         url = urlparse.urljoin(self.base_url, show_url)
         html = self._http_get(url, cache_limit=2)
-        pattern='h3>Season\s+%s(.*?)(?:<h3>|</div>)' % (season)
+        pattern='h3>Season\s+%s(.*?)(?:<h3>|</div>)' % (video.season)
         match = re.search(pattern, html, re.DOTALL)
         if match:
             container=match.group(1)
-            pattern='href="([^"]+)">Episode %s(?:|<)' % (episode)
+            pattern='href="([^"]+)">Episode %s(?:|<)' % (video.episode)
             match = re.search(pattern, container, re.DOTALL)
             if match:
                 url=match.group(1)

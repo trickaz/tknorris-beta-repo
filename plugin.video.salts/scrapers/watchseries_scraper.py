@@ -101,10 +101,10 @@ class WS_Scraper(scraper.Scraper):
                 results.append(result)
         return results
     
-    def _get_episode_url(self, show_url, season, episode, ep_title):
-        episode_pattern = 'href="(/episode/[^"]*_s%s_e%s.*?)"' % (season, episode)
+    def _get_episode_url(self, show_url, video):
+        episode_pattern = 'href="(/episode/[^"]*_s%s_e%s.*?)"' % (video.season, video.episode)
         title_pattern='href="(/episode[^"]+).*?(?:&nbsp;)+([^<]+)'
-        return super(WS_Scraper, self)._default_get_episode_url(show_url, season, episode, ep_title, episode_pattern, title_pattern)
+        return super(WS_Scraper, self)._default_get_episode_url(show_url, video, episode_pattern, title_pattern)
     
     def _http_get(self, url, cache_limit=8):
         return super(WS_Scraper, self)._cached_http_get(url, self.base_url, self.timeout, cache_limit=cache_limit)

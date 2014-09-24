@@ -1,3 +1,8 @@
+[B]Version 0.0.17[/B]
+- Added iwatchonline.to scraper
+- Fallback to cached pages when trakt.tv timesout/throw temporary errors
+- Added function to force a particular TV Show to always use episode title matching
+
 [B]Version 0.0.16[/B]
 - Fix trending when no valid trakt account is configured
 - Added myvideolinks.eu scraper

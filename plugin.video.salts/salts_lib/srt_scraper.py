@@ -183,7 +183,7 @@ class SRT_Scraper():
         log_utils.log('Fetching Cached URL: %s' % url, xbmc.LOGDEBUG)
         before = time.time()
         
-        html = db_connection.get_cached_url(url, cache)
+        _, html = db_connection.get_cached_url(url, cache)
         if html:
             log_utils.log('Returning cached result for: %s' % (url), xbmc.LOGDEBUG)
             return html

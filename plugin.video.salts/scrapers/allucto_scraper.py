@@ -29,7 +29,7 @@ from salts_lib.constants import QUALITIES
 from salts_lib.constants import USER_AGENT
 
 QUALITY_MAP = {'DVD': QUALITIES.HIGH, 'TS': QUALITIES.MEDIUM, 'CAM': QUALITIES.LOW}
-BASE_URL = 'http://www.alluc.to'
+BASE_URL = 'http://dir.alluc.to'
 
 class PW_Scraper(scraper.Scraper):
     base_url=BASE_URL
@@ -112,11 +112,9 @@ class PW_Scraper(scraper.Scraper):
                 results.append({'url': url, 'title': match_title, 'year': match_year})
         return results
     
-    def _get_episode_url(self, show_url, season, episode, ep_title):
-        season='%02d' % (int(season))
-        episode='%02d' % (int(episode))
-        episode_pattern = 'href="([^"]+)" title="watch[^"]+Season\s+%s\s+Episode\s+%s\s+online' % (season, episode)
-        return super(PW_Scraper, self)._default_get_episode_url(show_url, season, episode, ep_title, episode_pattern)
+    def _get_episode_url(self, show_url, video):
+        episode_pattern = 'href="([^"]+)" title="watch[^"]+Season\s+%02d\s+Episode\s+%02d\s+online' % (int(video.season), int(video.episode))
+        return super(PW_Scraper, self)._default_get_episode_url(show_url, video, episode_pattern)
         
     def _http_get(self, url, data=None, cache_limit=8):
         return super(PW_Scraper, self)._cached_http_get(url, self.base_url, self.timeout, data=data, cache_limit=cache_limit)

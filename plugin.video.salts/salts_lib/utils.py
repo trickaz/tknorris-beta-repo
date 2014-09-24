@@ -512,6 +512,11 @@ def format_episode_label(label, season, episode, srts):
         label+= ')[/COLOR]'
     return label
 
+def get_force_title_list():
+    filter_str = ADDON.get_setting('force_title_match')
+    filter_list = filter_str.split('|') if filter_str else []
+    return filter_list
+
 def calculate_success(name):
     tries=db_connection.get_setting('%s_try' % (name))
     fail = db_connection.get_setting('%s_fail' % (name))

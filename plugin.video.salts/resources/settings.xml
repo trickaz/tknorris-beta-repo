@@ -58,6 +58,7 @@
 		<setting id="sort4_field" type="enum" label="4th Sort Key" values="None|Source|Quality|Views|Rating" default="0" visible="eq(-8,true) + !eq(-2,0) + !eq(-4,0) + !eq(-6,0)"/>
 		<setting id="sort4_order" type="enum" label="4th Sort Key Order" values="Best to Worst|Worst to Best" default="0" visible="eq(-9,true) + !eq(-1,0) + !eq(-3,0) + !eq(-5,0) + !eq(-7,0)"/>
 		<setting id="source_sort_order" type="text" label="Source Sort Order" enable="false" visible="false"/>
+		<setting id="force_title_match" type="text" label="Shows forced to match only on title" enable="true" visible="true"/>
 	</category>
 	
 	<category label="Scrapers">

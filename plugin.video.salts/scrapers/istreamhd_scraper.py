@@ -101,14 +101,14 @@ class IStreamHD_Scraper(scraper.Scraper):
             
         return results
     
-    def _get_episode_url(self, show_url, season, episode, ep_title):
+    def _get_episode_url(self, show_url, video):
         url = urlparse.urljoin(self.base_url, show_url)
         html = self._http_get(url, cache_limit=2)
-        pattern = '<li data-role="list-divider">Season %s</li>(.*?)(?:<li data-role="list-divider">|</ul>)' % (season)
+        pattern = '<li data-role="list-divider">Season %s</li>(.*?)(?:<li data-role="list-divider">|</ul>)' % (video.season)
         match  = re.search(pattern, html, re.DOTALL)
         if match:
             season_container=match.group()
-            pattern = 'href="([^"]+)">.*?\s+E%s<' % (episode)
+            pattern = 'href="([^"]+)">.*?\s+E%s<' % (video.episode)
             match = re.search(pattern, season_container)
             if match:
                 return '/get/' + match.group(1)

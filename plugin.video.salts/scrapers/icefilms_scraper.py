@@ -109,7 +109,7 @@ class IceFilms_Scraper(scraper.Scraper):
                         source['views']=None
                         sources.append(source)
             except Exception as e:
-                log_utils.log('Failure (%s) during get sources: |%s|' % (str(e), video))
+                log_utils.log('Failure (%s) during icefilms get sources: |%s|' % (str(e), video))
         return sources
 
     def get_url(self, video):
@@ -145,10 +145,10 @@ class IceFilms_Scraper(scraper.Scraper):
                 results.append(result)
         return results
     
-    def _get_episode_url(self, show_url, season, episode, ep_title):
-        episode_pattern = 'href=(/ip\.php[^>]+)>%sx0?%s\s+' % (season, episode)
+    def _get_episode_url(self, show_url, video):
+        episode_pattern = 'href=(/ip\.php[^>]+)>%sx0?%s\s+' % (video.season, video.episode)
         title_pattern='class=star>\s*<a href=([^>]+)>(?:\d+x\d+\s+)+([^<]+)'
-        return super(IceFilms_Scraper, self)._default_get_episode_url(show_url, season, episode, ep_title, episode_pattern, title_pattern)
+        return super(IceFilms_Scraper, self)._default_get_episode_url(show_url, video, episode_pattern, title_pattern)
         
     def _http_get(self, url, data=None, cache_limit=8):
         return super(IceFilms_Scraper, self)._cached_http_get(url, self.base_url, self.timeout, data=data, cache_limit=cache_limit)

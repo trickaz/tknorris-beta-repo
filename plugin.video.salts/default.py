@@ -502,7 +502,7 @@ def get_sources(mode, video_type, title, year, slug, season='', episode='', ep_t
     worker_count=0
     hosters=[]
     workers=[]
-    video=ScraperVideo(video_type, title, year, season, episode, ep_title)
+    video=ScraperVideo(video_type, title, year, slug, season, episode, ep_title)
     if utils.P_MODE != P_MODES.NONE: q = utils.Queue()
     begin = time.time()
     fails={}
@@ -718,9 +718,9 @@ def pick_source_dir(hosters, video_type, slug, season='', episode='', filtered=F
     
     _SALTS.end_of_directory()
 
-@url_dispatcher.register(MODES.SET_URL_MANUAL, ['mode', 'video_type', 'title', 'year'], ['season', 'episode', 'ep_title'])
-@url_dispatcher.register(MODES.SET_URL_SEARCH, ['mode', 'video_type', 'title', 'year'], ['season', 'episode', 'ep_title'])
-def set_related_url(mode, video_type, title, year, season='', episode='', ep_title=''):
+@url_dispatcher.register(MODES.SET_URL_MANUAL, ['mode', 'video_type', 'title', 'year', 'slug'], ['season', 'episode', 'ep_title'])
+@url_dispatcher.register(MODES.SET_URL_SEARCH, ['mode', 'video_type', 'title', 'year', 'slug'], ['season', 'episode', 'ep_title'])
+def set_related_url(mode, video_type, title, year, slug, season='', episode='', ep_title=''):
     related_list=[]
     timeout = max_timeout = int(_SALTS.get_setting('source_timeout'))
     if max_timeout == 0: timeout=None
@@ -728,7 +728,7 @@ def set_related_url(mode, video_type, title, year, season='', episode='', ep_tit
     workers=[]
     if utils.P_MODE != P_MODES.NONE: q = utils.Queue()
     begin = time.time()
-    video=ScraperVideo(video_type, title, year, season, episode, ep_title)
+    video=ScraperVideo(video_type, title, year, slug, season, episode, ep_title)
     for cls in utils.relevant_scrapers(video_type):
         if utils.P_MODE == P_MODES.NONE:
             related={}
@@ -919,6 +919,17 @@ def copy_list(section, slug, username):
     builtin = "XBMC.Notification(%s,List Copied: (A:%s/ E:%s/ S:%s), 5000, %s)" % (_SALTS.get_name(), response['inserted'], response['already_exist'], response['skipped'], ICON_PATH)
     xbmc.executebuiltin(builtin)
 
+@ url_dispatcher.register(MODES.TOGGLE_TITLE, ['slug'])
+def toggle_title(slug):
+    filter_list = utils.get_force_title_list()
+    if slug in filter_list:
+        del filter_list[filter_list.index(slug)]
+    else:
+        filter_list.append(slug)
+    filter_str = '|'.join(filter_list)
+    _SALTS.set_setting('force_title_match', filter_str)
+    xbmc.executebuiltin("XBMC.Container.Refresh")
+
 @ url_dispatcher.register(MODES.TOGGLE_WATCHED, ['section', 'id_type', 'show_id'], ['watched', 'season', 'episode'])
 def toggle_watched(section, id_type, show_id, watched=True, season='', episode=''):
     log_utils.log('In Watched: |%s|%s|%s|%s|%s|%s|' % (section, id_type, show_id, season, episode, watched), xbmc.LOGDEBUG)
@@ -1075,7 +1086,7 @@ def add_to_library(video_type, title, year, slug, require_source=False):
                 final_path = os.path.join(save_path, show_folder, 'Season %s' % (season_num), filename)
                 strm_string = _SALTS.build_plugin_url({'mode': MODES.GET_SOURCES, 'video_type': VIDEO_TYPES.EPISODE, 'title': title, 'year': year, 'season': season_num, 
                                                        'episode': ep_num, 'slug': slug, 'ep_title': episode['title'], 'dialog': True})
-                write_strm(strm_string, final_path, VIDEO_TYPES.EPISODE, title, year, season_num, ep_num, require_source)
+                write_strm(strm_string, final_path, VIDEO_TYPES.EPISODE, title, year, slug, season_num, ep_num, require_source)
                 
     elif video_type == VIDEO_TYPES.MOVIE:
         save_path = _SALTS.get_setting('movie-folder')
@@ -1084,9 +1095,9 @@ def add_to_library(video_type, title, year, slug, require_source=False):
         filename = utils.filename_from_title(title, VIDEO_TYPES.MOVIE, year)
         dir_name = title if not year else '%s (%s)' % (title, year)
         final_path = os.path.join(save_path, dir_name, filename)
-        write_strm(strm_string, final_path, VIDEO_TYPES.MOVIE, title, year, require_source=require_source)
+        write_strm(strm_string, final_path, VIDEO_TYPES.MOVIE, title, year, slug, require_source=require_source)
 
-def write_strm(stream, path, video_type, title, year, season='', episode='', require_source=False):
+def write_strm(stream, path, video_type, title, year, slug, season='', episode='', require_source=False):
     path = xbmc.makeLegalFilename(path)
     if not xbmcvfs.exists(os.path.dirname(path)):
         try:
@@ -1106,7 +1117,7 @@ def write_strm(stream, path, video_type, title, year, season='', episode='', req
     # string will be blank if file doesn't exist or is blank
     if stream != old_strm_string:
         try:
-            if not require_source or utils.url_exists(ScraperVideo(video_type, title, year, season, episode)):
+            if not require_source or utils.url_exists(ScraperVideo(video_type, title, year, slug, season, episode)):
                 log_utils.log('Writing strm: %s' % stream)
                 file_desc = xbmcvfs.File(path, 'w')
                 file_desc.write(stream)
@@ -1264,7 +1275,7 @@ def make_episode_item(show, episode, fanart, show_subs=True):
         menu_items.append((label, 'RunPlugin(%s)' % (_SALTS.build_plugin_url(queries))), )
 
     queries = {'mode': MODES.SET_URL_MANUAL, 'video_type': VIDEO_TYPES.EPISODE, 'title': show['title'], 'year': show['year'], 'season': episode['season'], 
-               'episode': episode_num, 'ep_title': episode['title']}
+               'episode': episode_num, 'ep_title': episode['title'], 'slug': trakt_api.get_slug(show['url'])}
     menu_items.append(('Set Related Url (Manual)', 'RunPlugin(%s)' % (_SALTS.build_plugin_url(queries))), )
  
     liz.addContextMenuItems(menu_items, replaceItems=True)
@@ -1303,7 +1314,6 @@ def make_item(section_params, show, menu_items=None):
             runstring = 'Container.Update(%s)' % _SALTS.build_plugin_url(queries)
         menu_items.insert(0, ('Select Source', runstring), )
         
-    menu_items.append(('Show Information', 'XBMC.Action(Info)'), )
     if VALID_ACCOUNT:
         show_id=utils.show_id(show)
         queries = {'mode': MODES.ADD_TO_COLL, 'section': section_params['section']}
@@ -1344,12 +1354,24 @@ def make_item(section_params, show, menu_items=None):
         runstring = 'RunPlugin(%s)' % _SALTS.build_plugin_url(queries)
         menu_items.append(('Set Addic7ed TVShowID', runstring,))
 
-    queries = {'mode': MODES.SET_URL_SEARCH, 'video_type': section_params['video_type'], 'title': show['title'], 'year': show['year']}
+    if section_params['section'] == SECTIONS.TV:
+        if slug in utils.get_force_title_list():
+            label = 'Use Default episode matching'
+        else:
+            label = 'Use Episode Title matching'
+        queries = {'mode': MODES.TOGGLE_TITLE, 'slug': slug}
+        runstring = 'RunPlugin(%s)' % _SALTS.build_plugin_url(queries)
+        menu_items.append((label, runstring,))
+
+    queries = {'mode': MODES.SET_URL_SEARCH, 'video_type': section_params['video_type'], 'title': show['title'], 'year': show['year'], 'slug': slug}
     menu_items.append(('Set Related Url (Search)', 'RunPlugin(%s)' % (_SALTS.build_plugin_url(queries))), )
-    queries = {'mode': MODES.SET_URL_MANUAL, 'video_type': section_params['video_type'], 'title': show['title'], 'year': show['year']}
+    queries = {'mode': MODES.SET_URL_MANUAL, 'video_type': section_params['video_type'], 'title': show['title'], 'year': show['year'], 'slug': slug}
     menu_items.append(('Set Related Url (Manual)', 'RunPlugin(%s)' % (_SALTS.build_plugin_url(queries))), )
+    if len(menu_items)<10:
+        menu_items.insert(0, ('Show Information', 'XBMC.Action(Info)'), )
     liz.addContextMenuItems(menu_items, replaceItems=True)
  
+
     liz.setProperty('resumetime',str(0))
     liz.setProperty('totaltime',str(1))
     return liz, liz_url

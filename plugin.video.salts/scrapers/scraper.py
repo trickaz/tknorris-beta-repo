@@ -157,7 +157,7 @@ class Scraper(object):
                 log_utils.log('Got local related url: |%s|%s|%s|' % (video, self.get_name(), url))
             else:
                 show_url = url
-                url = self._get_episode_url(show_url, video.season, video.episode, video.ep_title)
+                url = self._get_episode_url(show_url, video)
                 if url:
                     self.db_connection.set_related_url(VIDEO_TYPES.EPISODE, video.title, video.year, self.get_name(), url, video.season, video.episode)
         
@@ -197,7 +197,7 @@ class Scraper(object):
         if cookies is None: cookies={}
         log_utils.log('Getting Url: %s cookie=|%s| data=|%s|' % (url, cookies, data))
         db_connection = DB_Connection()
-        html = db_connection.get_cached_url(url, cache_limit)
+        _, html = db_connection.get_cached_url(url, cache_limit)
         if html:
             log_utils.log('Returning cached result for: %s' % (url), xbmc.LOGDEBUG)
             return html
@@ -254,16 +254,24 @@ class Scraper(object):
         wdlg.close()
         return {'recaptcha_challenge_field':match.group(1),'recaptcha_response_field':solution}
     
-    def _default_get_episode_url(self, show_url, season, episode, ep_title, episode_pattern, title_pattern=''):
-        log_utils.log('Default Episode Url: |%s|%s|%s|%s|%s|' % (self.base_url, show_url, season, episode, ep_title), xbmc.LOGDEBUG)
+    def _default_get_episode_url(self, show_url, video, episode_pattern, title_pattern=''):
+        log_utils.log('Default Episode Url: |%s|%s|%s|' % (self.base_url, show_url, video), xbmc.LOGDEBUG)
         url = urlparse.urljoin(self.base_url, show_url)
         html = self._http_get(url, cache_limit=2)
-        match = re.search(episode_pattern, html, re.DOTALL)
-        if match:
-            url = match.group(1)
-            return url.replace(self.base_url, '')
-        elif xbmcaddon.Addon().getSetting('title-fallback')=='true' and ep_title and title_pattern:
-            norm_title = self._normalize_title(ep_title)
+        slug_str = xbmcaddon.Addon().getSetting('force_title_match')
+        slug_list = slug_str.split('|') if slug_str else []
+        force_title = video.slug in slug_list
+        
+        if not force_title: 
+            match = re.search(episode_pattern, html, re.DOTALL)
+            if match:
+                url = match.group(1)
+                return url.replace(self.base_url, '')
+        else:
+            log_utils.log('Skipping S&E matching as title search is forced on: %s' % (video.slug), xbmc.LOGDEBUG)
+        
+        if (force_title or xbmcaddon.Addon().getSetting('title-fallback')=='true') and video.ep_title and title_pattern:
+            norm_title = self._normalize_title(video.ep_title)
             for match in re.finditer(title_pattern, html, re.DOTALL | re.I):
                 url, title = match.groups()
                 if norm_title == self._normalize_title(title):

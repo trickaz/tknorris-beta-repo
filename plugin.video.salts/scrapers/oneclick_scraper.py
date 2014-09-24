@@ -93,9 +93,9 @@ class OneClick_Scraper(scraper.Scraper):
                 results.append(result)
         return results
     
-    def _get_episode_url(self, show_url, season, episode, ep_title):
-        episode_pattern = 'class="link"\s+href="([^"]+/season/%s/episode/%s)"' % (season, episode)
-        return super(OneClick_Scraper, self)._default_get_episode_url(show_url, season, episode, ep_title, episode_pattern)
+    def _get_episode_url(self, show_url, video):
+        episode_pattern = 'class="link"\s+href="([^"]+/season/%s/episode/%s)"' % (video.season, video.episode)
+        return super(OneClick_Scraper, self)._default_get_episode_url(show_url, video, episode_pattern)
         
     def _http_get(self, url, cache_limit=8):
         return super(OneClick_Scraper, self)._cached_http_get(url, self.base_url, self.timeout, cache_limit=cache_limit)
