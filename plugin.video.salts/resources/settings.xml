@@ -27,15 +27,15 @@
 	             default="special://userdata/addon_data/plugin.video.salts/TVShows"/>
 	    <setting id="movie-folder" type="folder" label="Movie Folder"
 	             default="special://userdata/addon_data/plugin.video.salts/Movies"/>
+		<setting id="require_source" type="bool" label="Require Site Page?" default="true" visible="true"/>
 		<setting id="auto-update_subs" type="bool" label="Automatically Update Subscriptions" default="false"/>
 		<setting id="update_subs-interval" type="slider" range=".5,.5,24" option="float" label="     Update Interval (hours)" default="2" visible="eq(-1,true)"/>
-		<setting id="require_source" type="bool" label="     Require Site Page?" default="true" visible="eq(-2,true)"/>
-		<setting id="update_subs-during-startup" type="bool" label="     During StartUp?" default="false" visible="eq(-3,true)"/>
-		<setting id="update_subs-during-playback" type="bool" label="     During Playback?" default="false" visible="eq(-4,true)"/>
-		<setting id="include_movies" type="bool" label="     Include Movies?" default="false" visible="eq(-5,true)"/>
-		<setting id="library-update" type="bool" label="     Update Library Afterward?" default="false" visible="eq(-6,true)"/>
-		<setting id="update_subs-notify" type="bool" label="     Show Notifications?" default="false" visible="eq(-7,true)"/>
-		<setting id="cleanup-subscriptions" type="bool" label="     Prune Ended Shows?" default="false" visible="eq(-8,true)"/>
+		<setting id="update_subs-during-startup" type="bool" label="     During StartUp?" default="false" visible="eq(-2,true)"/>
+		<setting id="update_subs-during-playback" type="bool" label="     During Playback?" default="false" visible="eq(-3,true)"/>
+		<setting id="include_movies" type="bool" label="     Include Movies?" default="false" visible="eq(-4,true)"/>
+		<setting id="library-update" type="bool" label="     Update Library Afterward?" default="false" visible="eq(-5,true)"/>
+		<setting id="update_subs-notify" type="bool" label="     Show Notifications?" default="false" visible="eq(-6,true)"/>
+		<setting id="cleanup-subscriptions" type="bool" label="     Prune Ended Shows?" default="false" visible="eq(-7,true)"/>
 	</category>
 	<category label="Source Management">
         <setting id="auto-play" type="bool" label="Auto-Play Sources" default="false"/>
@@ -58,7 +58,7 @@
 		<setting id="sort4_field" type="enum" label="4th Sort Key" values="None|Source|Quality|Views|Rating" default="0" visible="eq(-8,true) + !eq(-2,0) + !eq(-4,0) + !eq(-6,0)"/>
 		<setting id="sort4_order" type="enum" label="4th Sort Key Order" values="Best to Worst|Worst to Best" default="0" visible="eq(-9,true) + !eq(-1,0) + !eq(-3,0) + !eq(-5,0) + !eq(-7,0)"/>
 		<setting id="source_sort_order" type="text" label="Source Sort Order" enable="false" visible="false"/>
-		<setting id="force_title_match" type="text" label="Shows forced to match only on title" enable="true" visible="true"/>
+		<setting id="force_title_match" type="text" label="Shows forced to match only on title" enable="false" visible="false"/>
 	</category>
 	
 	<category label="Scrapers">

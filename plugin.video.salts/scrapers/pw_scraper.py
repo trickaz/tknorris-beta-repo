@@ -78,7 +78,8 @@ class PW_Scraper(scraper.Scraper):
                         max_index=i
                         max_views=item['views']
                         
-                    item['rating'] = item['views']*100/max_views
+                    if max_views> 0: item['rating'] = item['views']*100/max_views
+                    else: item['rating']=None
                     pattern = r'<a href=".*?url=(.*?)&(?:amp;)?.*?".*?>(part \d*)</a>'
                     other_parts = re.findall(pattern, parts, re.DOTALL | re.I)
                     if other_parts:
@@ -89,8 +90,9 @@ class PW_Scraper(scraper.Scraper):
                     item['class']=self
                     hosters.append(item)
             
-            for i in xrange(0,max_index):
-                hosters[i]['rating']=hosters[i]['views']*100/max_views
+            if max_views>0:
+                for i in xrange(0,max_index):
+                    hosters[i]['rating']=hosters[i]['views']*100/max_views
          
         return hosters
 

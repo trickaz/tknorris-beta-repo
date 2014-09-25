@@ -194,7 +194,7 @@ def get_section_params(section, set_sort=True):
     else:
         set_view('movies', set_sort)
         section_params['next_mode']=MODES.GET_SOURCES
-        section_params['folder']=ADDON.get_setting('source-win')=='Directory'
+        section_params['folder']=ADDON.get_setting('source-win')=='Directory' and ADDON.get_setting('auto-play')=='false'
         section_params['video_type']=VIDEO_TYPES.MOVIE
     return section_params
 

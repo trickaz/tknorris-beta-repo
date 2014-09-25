@@ -255,7 +255,7 @@ class Scraper(object):
         return {'recaptcha_challenge_field':match.group(1),'recaptcha_response_field':solution}
     
     def _default_get_episode_url(self, show_url, video, episode_pattern, title_pattern=''):
-        log_utils.log('Default Episode Url: |%s|%s|%s|' % (self.base_url, show_url, video), xbmc.LOGDEBUG)
+        log_utils.log('Default Episode Url: |%s|%s|%s|' % (self.base_url, show_url, str(video).decode('utf-8', 'replace')), xbmc.LOGDEBUG)
         url = urlparse.urljoin(self.base_url, show_url)
         html = self._http_get(url, cache_limit=2)
         slug_str = xbmcaddon.Addon().getSetting('force_title_match')

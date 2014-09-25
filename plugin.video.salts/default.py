@@ -228,22 +228,19 @@ def browse_friends(mode, section):
         if 'episode' in activity:
             show=activity['show']
             liz, liz_url = make_episode_item(show, activity['episode'], show['images']['fanart'], show_subs=False)
-            folder=_SALTS.get_setting('source-win')=='Directory'
+            folder=(liz.getProperty('isPlayable')!='true')
             label=liz.getLabel()
-            label = '%s (%s) - %s' % (show['title'], show['year'], label)
+            label = '%s (%s) - %s' % (show['title'], show['year'], label.decode('utf-8', 'replace'))
             liz.setLabel(label) 
         else:
             liz, liz_url = make_item(section_params, activity[TRAKT_SECTIONS[section][:-1]])
             folder = section_params['folder']
 
-        if not folder:
-            liz.setProperty('IsPlayable', 'true')
-
         label=liz.getLabel()
         action = ' [[COLOR blue]%s[/COLOR] [COLOR green]%s' % (activity['user']['username'], activity['action'])
         if activity['action']=='rating': action += ' - %s' % (activity['rating'])
         action += '[/COLOR]]'
-        label = '%s %s' % (action, label)
+        label = '%s %s' % (action, label.decode('utf-8', 'replace'))
         liz.setLabel(label)
         
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), liz_url, liz,isFolder=folder,totalItems=totalItems)        
@@ -379,15 +376,11 @@ def show_progress():
                 fanart=item['show']['images']['fanart']
                 date=utils.make_day(time.strftime('%Y-%m-%d', time.localtime(item['next_episode']['first_aired'])))      
                 liz, liz_url = make_episode_item(show, item['next_episode'], fanart)
-                folder=_SALTS.get_setting('source-win')=='Directory'
                 label=liz.getLabel()
                 label = '[[COLOR deeppink]%s[/COLOR]] %s - %s' % (date, show['title'], label.decode('utf-8', 'replace'))
                 liz.setLabel(label) 
 
-                if not folder:
-                    liz.setProperty('IsPlayable', 'true')
-    
-                xbmcplugin.addDirectoryItem(int(sys.argv[1]), liz_url, liz,isFolder=folder)        
+                xbmcplugin.addDirectoryItem(int(sys.argv[1]), liz_url, liz,isFolder=(liz.getProperty('isPlayable')!='true'))        
     xbmcplugin.endOfDirectory(int(sys.argv[1]), cacheToDisc=False)
     
 @url_dispatcher.register(MODES.MANAGE_SUBS, ['section'])
@@ -478,7 +471,6 @@ def browse_seasons(slug, fanart):
 
 @url_dispatcher.register(MODES.EPISODES, ['slug', 'season', 'fanart'])
 def browse_episodes(slug, season, fanart):
-    folder=_SALTS.get_setting('source-win')=='Directory'
     utils.set_view('episodes', False)
     show=trakt_api.get_show_details(slug)
     episodes=trakt_api.get_episodes(slug, season)
@@ -488,9 +480,7 @@ def browse_episodes(slug, season, fanart):
         if _SALTS.get_setting('show_unaired')=='true' or episode['first_aired']<=now:
             if _SALTS.get_setting('show_unknown')=='true' or episode['first_aired']:
                 liz, liz_url =make_episode_item(show, episode, fanart)
-                if not folder:
-                    liz.setProperty('IsPlayable', 'true')
-                xbmcplugin.addDirectoryItem(int(sys.argv[1]), liz_url, liz,isFolder=folder,totalItems=totalItems)
+                xbmcplugin.addDirectoryItem(int(sys.argv[1]), liz_url, liz,isFolder=(liz.getProperty('isPlayable')!='true'),totalItems=totalItems)
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
 @url_dispatcher.register(MODES.GET_SOURCES, ['mode', 'video_type', 'title', 'year', 'slug'], ['season', 'episode', 'ep_title', 'dialog'])
@@ -919,7 +909,7 @@ def copy_list(section, slug, username):
     builtin = "XBMC.Notification(%s,List Copied: (A:%s/ E:%s/ S:%s), 5000, %s)" % (_SALTS.get_name(), response['inserted'], response['already_exist'], response['skipped'], ICON_PATH)
     xbmc.executebuiltin(builtin)
 
-@ url_dispatcher.register(MODES.TOGGLE_TITLE, ['slug'])
+@url_dispatcher.register(MODES.TOGGLE_TITLE, ['slug'])
 def toggle_title(slug):
     filter_list = utils.get_force_title_list()
     if slug in filter_list:
@@ -930,7 +920,7 @@ def toggle_title(slug):
     _SALTS.set_setting('force_title_match', filter_str)
     xbmc.executebuiltin("XBMC.Container.Refresh")
 
-@ url_dispatcher.register(MODES.TOGGLE_WATCHED, ['section', 'id_type', 'show_id'], ['watched', 'season', 'episode'])
+@url_dispatcher.register(MODES.TOGGLE_WATCHED, ['section', 'id_type', 'show_id'], ['watched', 'season', 'episode'])
 def toggle_watched(section, id_type, show_id, watched=True, season='', episode=''):
     log_utils.log('In Watched: |%s|%s|%s|%s|%s|%s|' % (section, id_type, show_id, season, episode, watched), xbmc.LOGDEBUG)
     item = {id_type: show_id}
@@ -976,7 +966,7 @@ def update_strms(section):
         _, items = trakt_api.show_list(slug, section)
     
     for item in items:
-        add_to_library(section_params['video_type'], item['title'], item['year'], trakt_api.get_slug(item['url']), require_source=True)
+        add_to_library(section_params['video_type'], item['title'], item['year'], trakt_api.get_slug(item['url']))
 
 @url_dispatcher.register(MODES.CLEAN_SUBS)
 def clean_subs():
@@ -1064,12 +1054,14 @@ def import_db():
         raise
 
 @url_dispatcher.register(MODES.ADD_TO_LIBRARY, ['video_type', 'title', 'year', 'slug'])
-def add_to_library(video_type, title, year, slug, require_source=False):
+def add_to_library(video_type, title, year, slug):
     log_utils.log('Creating .strm for |%s|%s|%s|%s|' % (video_type, title, year, slug), xbmc.LOGDEBUG)
+    require_source = _SALTS.get_setting('require_source')=='true'
     if video_type == VIDEO_TYPES.TVSHOW:
         save_path = _SALTS.get_setting('tvshow-folder')
         save_path = xbmc.translatePath(save_path)
         show = trakt_api.get_show_details(slug)
+        show['title'] = re.sub(' \(\d{4}\)$','',show['title']) # strip off year if it's part of show title
         seasons = trakt_api.get_seasons(slug)
 
         if not seasons:
@@ -1086,7 +1078,7 @@ def add_to_library(video_type, title, year, slug, require_source=False):
                 final_path = os.path.join(save_path, show_folder, 'Season %s' % (season_num), filename)
                 strm_string = _SALTS.build_plugin_url({'mode': MODES.GET_SOURCES, 'video_type': VIDEO_TYPES.EPISODE, 'title': title, 'year': year, 'season': season_num, 
                                                        'episode': ep_num, 'slug': slug, 'ep_title': episode['title'], 'dialog': True})
-                write_strm(strm_string, final_path, VIDEO_TYPES.EPISODE, title, year, slug, season_num, ep_num, require_source)
+                write_strm(strm_string, final_path, VIDEO_TYPES.EPISODE, show['title'], show['year'], slug, season_num, ep_num, require_source=require_source)
                 
     elif video_type == VIDEO_TYPES.MOVIE:
         save_path = _SALTS.get_setting('movie-folder')
@@ -1095,7 +1087,7 @@ def add_to_library(video_type, title, year, slug, require_source=False):
         filename = utils.filename_from_title(title, VIDEO_TYPES.MOVIE, year)
         dir_name = title if not year else '%s (%s)' % (title, year)
         final_path = os.path.join(save_path, dir_name, filename)
-        write_strm(strm_string, final_path, VIDEO_TYPES.MOVIE, title, year, slug, require_source=require_source)
+        write_strm(strm_string, final_path, VIDEO_TYPES.MOVIE, show['title'], show['year'], slug, require_source=require_source)
 
 def write_strm(stream, path, video_type, title, year, slug, season='', episode='', require_source=False):
     path = xbmc.makeLegalFilename(path)
@@ -1207,8 +1199,7 @@ def make_dir_from_cal(mode, start_date, days):
             if episode['season']==1 and episode['number']==1:
                 label = '[COLOR green]%s[/COLOR]' % (label)
             liz.setLabel(label)
-            liz.setProperty('isPlayable', 'true')
-            xbmcplugin.addDirectoryItem(int(sys.argv[1]), liz_url, liz,isFolder=False,totalItems=totalItems)
+            xbmcplugin.addDirectoryItem(int(sys.argv[1]), liz_url, liz,isFolder=(liz.getProperty('isPlayable')!='true'),totalItems=totalItems)
 
     liz = xbmcgui.ListItem(label='Next Week >>', iconImage=art('next.png'), thumbnailImage=art('next.png'))
     liz_url = _SALTS.build_plugin_url({'mode': mode, 'start_date': next_week})
@@ -1217,6 +1208,7 @@ def make_dir_from_cal(mode, start_date, days):
 
 def make_episode_item(show, episode, fanart, show_subs=True):
     log_utils.log('Make Episode: Show: %s, Episode: %s, Fanart: %s, Show Subs: %s' % (show, episode, fanart, show_subs), xbmc.LOGDEBUG)
+    folder = _SALTS.get_setting('source-win')=='Directory' and _SALTS.get_setting('auto-play')=='false'
     show['title']=re.sub(' \(\d{4}\)$','',show['title'])
     if 'episode' in episode: episode_num=episode['episode']
     else:  episode_num=episode['number']
@@ -1239,6 +1231,9 @@ def make_episode_item(show, episode, fanart, show_subs=True):
     meta['images']['poster']=episode['images']['screen']
     meta['images']['fanart']=fanart
     liz=utils.make_list_item(label, meta)
+    if not folder:
+        liz.setProperty('isPlayable', 'true')
+
     del meta['images']
     liz.setInfo('video', meta)
     queries = {'mode': MODES.GET_SOURCES, 'video_type': VIDEO_TYPES.EPISODE, 'title': show['title'], 'year': show['year'], 'season': episode['season'], 'episode': episode_num, 
@@ -1250,13 +1245,23 @@ def make_episode_item(show, episode, fanart, show_subs=True):
         queries = {'mode': MODES.SELECT_SOURCE, 'video_type': VIDEO_TYPES.EPISODE, 'title': show['title'], 'year': show['year'], 'season': episode['season'], 'episode': episode_num, 
                    'ep_title': episode['title'], 'slug': trakt_api.get_slug(show['url'])}
         if _SALTS.get_setting('source-win')=='Dialog':
-            runstring = 'RunPlugin(%s)' % _SALTS.build_plugin_url(queries)
+            runstring = 'PlayMedia(%s)' % _SALTS.build_plugin_url(queries)
         else:
             runstring = 'Container.Update(%s)' % _SALTS.build_plugin_url(queries)
+        print 'RunString is: %s' % (runstring)
         menu_items.append(('Select Source', runstring), )
         
     menu_items.append(('Show Information', 'XBMC.Action(Info)'), )
 
+    show_id=utils.show_id(show)
+    queries = {'mode': MODES.ADD_TO_COLL, 'section': SECTIONS.TV}
+    queries.update(show_id)
+    menu_items.append(('Add Show to Collection', 'RunPlugin(%s)' % (_SALTS.build_plugin_url(queries))), )
+    
+    queries = {'mode': MODES.ADD_TO_LIST, 'section': SECTIONS.TV}
+    queries.update(show_id)
+    menu_items.append(('Add Show to List', 'RunPlugin(%s)' % (_SALTS.build_plugin_url(queries))), )
+        
     if 'watched' in episode and episode['watched']:
         watched=False
         label='Mark as Unwatched'
@@ -1309,7 +1314,7 @@ def make_item(section_params, show, menu_items=None):
     if section_params['next_mode']==MODES.GET_SOURCES and _SALTS.get_setting('auto-play')=='true':
         queries = {'mode': MODES.SELECT_SOURCE, 'video_type': section_params['video_type'], 'title': show['title'], 'year': show['year'], 'slug': slug}
         if _SALTS.get_setting('source-win')=='Dialog':
-            runstring = 'RunPlugin(%s)' % _SALTS.build_plugin_url(queries)
+            runstring = 'PlayMedia(%s)' % _SALTS.build_plugin_url(queries)
         else:
             runstring = 'Container.Update(%s)' % _SALTS.build_plugin_url(queries)
         menu_items.insert(0, ('Select Source', runstring), )

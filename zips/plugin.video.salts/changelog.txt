@@ -1,3 +1,14 @@
+[B]Version 0.0.18[/B]
+- Added popcornered.com scraper
+- Added shush.se scraper
+- Added ororo.tv scraper
+- Added view47.com scraper
+- Fix autoplay mode
+- Minor fixes to other scrapers
+- Fix subscription url existence checking
+- Fix sub show titles ending in (year)
+- Added context menu to add show to collection/list in episode views
+ 
 [B]Version 0.0.17[/B]
 - Added iwatchonline.to scraper
 - Fallback to cached pages when trakt.tv timesout/throw temporary errors

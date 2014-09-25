@@ -49,7 +49,7 @@ class WS_Scraper(scraper.Scraper):
             return match.group(1)
     
     def format_source_label(self, item):
-        return '%s (%s/100)' % (item['host'], item['rating'])
+        return '[%s] %s (%s/100)' % (item['quality'], item['host'], item['rating'])
     
     def get_sources(self, video):
         source_url=self.get_url(video)
