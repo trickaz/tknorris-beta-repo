@@ -29,7 +29,7 @@ from salts_lib.constants import QUALITIES
 BASE_URL = 'http://ororo.tv'
 CATEGORIES={VIDEO_TYPES.TVSHOW: '2,3', VIDEO_TYPES.MOVIE: '1,3,4'}
 
-class IStreamHD_Scraper(scraper.Scraper):
+class OroroTV_Scraper(scraper.Scraper):
     base_url=BASE_URL
     def __init__(self, timeout=scraper.DEFAULT_TIMEOUT):
         self.timeout=timeout
@@ -66,7 +66,6 @@ class IStreamHD_Scraper(scraper.Scraper):
                     source_url = match.group(1)
                     url = urlparse.urljoin(self.base_url, source_url)
                     html = self._http_get(url, cache_limit=.5)
-                    print html
             else:
                 quality = QUALITIES.HIGH
                     
@@ -76,12 +75,12 @@ class IStreamHD_Scraper(scraper.Scraper):
         return hosters
 
     def get_url(self, video):
-        return super(IStreamHD_Scraper, self)._default_get_url(video)
+        return super(OroroTV_Scraper, self)._default_get_url(video)
     
     def _get_episode_url(self, show_url, video):
         episode_pattern = 'href="#%s-%s"\s+class="episode"\s+data-href="([^"]+)' % (video.season, video.episode)
         title_pattern='class="episode" data-href="([^"]+)[^>]+>.\d\s+([^<]+)'
-        return super(IStreamHD_Scraper, self)._default_get_episode_url(show_url, video, episode_pattern, title_pattern)
+        return super(OroroTV_Scraper, self)._default_get_episode_url(show_url, video, episode_pattern, title_pattern)
         
     def search(self, video_type, title, year):
         url = urlparse.urljoin(self.base_url, 'http://ororo.tv/en')
@@ -116,17 +115,17 @@ class IStreamHD_Scraper(scraper.Scraper):
         if not self.username or not self.password:
             return ''
          
-        html=super(IStreamHD_Scraper, self)._cached_http_get(url, self.base_url, self.timeout, data=data, cache_limit=cache_limit)
+        html=super(OroroTV_Scraper, self)._cached_http_get(url, self.base_url, self.timeout, data=data, cache_limit=cache_limit)
         if not re.search('href="/en/users/sign_out"', html):
             log_utils.log('Logging in for url (%s)' % (url), xbmc.LOGDEBUG)
             self.__login()
-            html=super(IStreamHD_Scraper, self)._cached_http_get(url, self.base_url, self.timeout, data=data, cache_limit=0)
+            html=super(OroroTV_Scraper, self)._cached_http_get(url, self.base_url, self.timeout, data=data, cache_limit=0)
         
         return html
 
     def __login(self):
         url = urlparse.urljoin(self.base_url, '/en/users/sign_in')
         data = {'user[email]': self.username, 'user[password]': self.password, 'user[remember_me]': 1}
-        html=self._http_get(url, data=data, cache_limit=0)
+        html = super(OroroTV_Scraper, self)._cached_http_get(url, self.base_url, self.timeout, data=data, cache_limit=0)
         if not re.search('href="/en/users/sign_out', html):
             raise Exception('ororo.tv login failed')

@@ -62,6 +62,94 @@
 	</category>
 	
 	<category label="Scrapers">
+         <setting id="Dummy-enable" type="bool" label="Dummy Enabled" default="true" visible="true"/>
+         <setting id="Dummy-base_url" type="text" label="     Base Url" default="" visible="eq(-1,true)"/>
+         <setting id="Dummy-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
+         <setting id="PrimeWire-enable" type="bool" label="PrimeWire Enabled" default="true" visible="true"/>
+         <setting id="PrimeWire-base_url" type="text" label="     Base Url" default="http://www.primewire.ag" visible="eq(-1,true)"/>
+         <setting id="PrimeWire-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
+         <setting id="UFlix.org-enable" type="bool" label="UFlix.org Enabled" default="true" visible="true"/>
+         <setting id="UFlix.org-base_url" type="text" label="     Base Url" default="http://uflix.org" visible="eq(-1,true)"/>
+         <setting id="UFlix.org-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
+         <setting id="WatchSeries-enable" type="bool" label="WatchSeries Enabled" default="true" visible="true"/>
+         <setting id="WatchSeries-base_url" type="text" label="     Base Url" default="http://watchseries.sx" visible="eq(-1,true)"/>
+         <setting id="WatchSeries-sub_check" type="bool" label="     Include in Page Existence checks?" default="false" visible="eq(-2,true)"/>
+         <setting id="movie25-enable" type="bool" label="movie25 Enabled" default="true" visible="true"/>
+         <setting id="movie25-base_url" type="text" label="     Base Url" default="http://movie25.cm" visible="eq(-1,true)"/>
+         <setting id="movie25-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
+         <setting id="MerDB-enable" type="bool" label="MerDB Enabled" default="true" visible="true"/>
+         <setting id="MerDB-base_url" type="text" label="     Base Url" default="http://merdb.cn" visible="eq(-1,true)"/>
+         <setting id="MerDB-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
+         <setting id="2movies-enable" type="bool" label="2movies Enabled" default="true" visible="true"/>
+         <setting id="2movies-base_url" type="text" label="     Base Url" default="http://twomovies.us" visible="eq(-1,true)"/>
+         <setting id="2movies-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
+         <setting id="IceFilms-enable" type="bool" label="IceFilms Enabled" default="true" visible="true"/>
+         <setting id="IceFilms-base_url" type="text" label="     Base Url" default="http://www.icefilms.info" visible="eq(-1,true)"/>
+         <setting id="IceFilms-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
+         <setting id="afdah-enable" type="bool" label="afdah Enabled" default="true" visible="true"/>
+         <setting id="afdah-base_url" type="text" label="     Base Url" default="http://afdah.com" visible="eq(-1,true)"/>
+         <setting id="afdah-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
+         <setting id="iStreamHD-enable" type="bool" label="iStreamHD Enabled" default="true" visible="true"/>
+         <setting id="iStreamHD-base_url" type="text" label="     Base Url" default="http://istreamhd.org" visible="eq(-1,true)"/>
+         <setting id="iStreamHD-username" type="text" label="     Username" default="" visible="eq(-2,true)"/>
+         <setting id="iStreamHD-password" type="text" label="     Password" option="hidden" default="" visible="eq(-3,true)"/>
+         <setting id="MoviesHD-enable" type="bool" label="MoviesHD Enabled" default="true" visible="true"/>
+         <setting id="MoviesHD-base_url" type="text" label="     Base Url" default="http://movieshd.co" visible="eq(-1,true)"/>
+         <setting id="MoviesHD-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
+         <setting id="SimplyMovies-enable" type="bool" label="SimplyMovies Enabled" default="true" visible="true"/>
+         <setting id="SimplyMovies-base_url" type="text" label="     Base Url" default="http://www.simplymovies.net" visible="eq(-1,true)"/>
+         <setting id="SimplyMovies-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
+         <setting id="yify.tv-enable" type="bool" label="yify.tv Enabled" default="true" visible="true"/>
+         <setting id="yify.tv-base_url" type="text" label="     Base Url" default="http://yify.tv" visible="eq(-1,true)"/>
+         <setting id="yify.tv-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
+         <setting id="viooz.be-enable" type="bool" label="viooz.be Enabled" default="true" visible="true"/>
+         <setting id="viooz.be-base_url" type="text" label="     Base Url" default="http://viooz.be" visible="eq(-1,true)"/>
+         <setting id="viooz.be-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
+         <setting id="FilmStreaming.in-enable" type="bool" label="FilmStreaming.in Enabled" default="true" visible="true"/>
+         <setting id="FilmStreaming.in-base_url" type="text" label="     Base Url" default="http://film-streaming.in" visible="eq(-1,true)"/>
+         <setting id="FilmStreaming.in-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
+         <setting id="Alluc.to-enable" type="bool" label="Alluc.to Enabled" default="true" visible="true"/>
+         <setting id="Alluc.to-base_url" type="text" label="     Base Url" default="http://dir.alluc.to" visible="eq(-1,true)"/>
+         <setting id="Alluc.to-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
+         <setting id="OnlineMovies-enable" type="bool" label="OnlineMovies Enabled" default="true" visible="true"/>
+         <setting id="OnlineMovies-base_url" type="text" label="     Base Url" default="http://onlinemovies.pro" visible="eq(-1,true)"/>
+         <setting id="OnlineMovies-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
+         <setting id="OneClickMoviez-enable" type="bool" label="OneClickMoviez Enabled" default="true" visible="true"/>
+         <setting id="OneClickMoviez-base_url" type="text" label="     Base Url" default="http://www.oneclickmoviez.ag" visible="eq(-1,true)"/>
+         <setting id="OneClickMoviez-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
+         <setting id="MyVideoLinks.eu-enable" type="bool" label="MyVideoLinks.eu Enabled" default="true" visible="true"/>
+         <setting id="MyVideoLinks.eu-base_url" type="text" label="     Base Url" default="http://myvideolinks.eu" visible="eq(-1,true)"/>
+         <setting id="MyVideoLinks.eu-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
+         <setting id="MyVideoLinks.eu-filter" type="slider" range="0,180" option="int" label="     Filter results older than (0=No Filter) (days)" default="30" visible="eq(-3,true)"/>
+         <setting id="MyVideoLinks.eu-select" type="enum" label="     Automatically Select (Movies only)" values="Most Recent|Highest Quality" default="0" visible="eq(-4,true)"/>
+         <setting id="filmikz.ch-enable" type="bool" label="filmikz.ch Enabled" default="true" visible="true"/>
+         <setting id="filmikz.ch-base_url" type="text" label="     Base Url" default="http://filmikz.ch" visible="eq(-1,true)"/>
+         <setting id="filmikz.ch-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
+         <setting id="iWatchOnline-enable" type="bool" label="iWatchOnline Enabled" default="true" visible="true"/>
+         <setting id="iWatchOnline-base_url" type="text" label="     Base Url" default="http://www.iwatchonline.to" visible="eq(-1,true)"/>
+         <setting id="iWatchOnline-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
+         <setting id="popcornered-enable" type="bool" label="popcornered Enabled" default="true" visible="true"/>
+         <setting id="popcornered-base_url" type="text" label="     Base Url" default="http://popcornered.com" visible="eq(-1,true)"/>
+         <setting id="popcornered-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
+         <setting id="Shush.se-enable" type="bool" label="Shush.se Enabled" default="true" visible="true"/>
+         <setting id="Shush.se-base_url" type="text" label="     Base Url" default="http://shush.se" visible="eq(-1,true)"/>
+         <setting id="Shush.se-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
+         <setting id="ororo.tv-enable" type="bool" label="ororo.tv Enabled" default="true" visible="true"/>
+         <setting id="ororo.tv-base_url" type="text" label="     Base Url" default="http://ororo.tv" visible="eq(-1,true)"/>
+         <setting id="ororo.tv-username" type="text" label="     Username" default="" visible="eq(-2,true)"/>
+         <setting id="ororo.tv-password" type="text" label="     Password" option="hidden" default="" visible="eq(-3,true)"/>
+         <setting id="ororo.tv-include_paid" type="bool" label="     Include Paid content" default="false" visible="eq(-4,true)"/>
+         <setting id="view47-enable" type="bool" label="view47 Enabled" default="true" visible="true"/>
+         <setting id="view47-base_url" type="text" label="     Base Url" default="http://www.view47.com" visible="eq(-1,true)"/>
+         <setting id="view47-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
+         <setting id="vidics.ch-enable" type="bool" label="vidics.ch Enabled" default="true" visible="true"/>
+         <setting id="vidics.ch-base_url" type="text" label="     Base Url" default="http://www.vidics.ch" visible="eq(-1,true)"/>
+         <setting id="vidics.ch-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
+         <setting id="OneClickWatch-enable" type="bool" label="OneClickWatch Enabled" default="true" visible="true"/>
+         <setting id="OneClickWatch-base_url" type="text" label="     Base Url" default="http://oneclickwatch.org" visible="eq(-1,true)"/>
+         <setting id="OneClickWatch-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
+         <setting id="OneClickWatch-filter" type="slider" range="0,180" option="int" label="     Filter results older than (0=No Filter) (days)" default="30" visible="eq(-3,true)"/>
+         <setting id="OneClickWatch-select" type="enum" label="     Automatically Select (Movies only)" values="Most Recent|Highest Quality" default="0" visible="eq(-4,true)"/>
     </category>
 
     <category label="Subtitles">

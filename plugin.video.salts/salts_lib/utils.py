@@ -429,6 +429,9 @@ def make_day(date):
 
     return date
 
+def get_local_airtime(air_time):
+    return air_time - (8*60*60 - time.timezone)
+
 def valid_account():
     username=ADDON.get_setting('username')
     password=ADDON.get_setting('password')

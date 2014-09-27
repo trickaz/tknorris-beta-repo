@@ -1,3 +1,12 @@
+[B]Version 0.0.19[/B]
+- Improve url resolution logic for shush.se
+- Convert show Air Time to Local Time
+- Added vidics.ch scraper
+- Fix infinite loop in ororo.tv
+- Fix invalid char in show folders
+- Add settings menu items for URL Resolver and Addon
+- Added oneclickwatch.org scraper
+
 [B]Version 0.0.18[/B]
 - Added popcornered.com scraper
 - Added shush.se scraper

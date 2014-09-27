@@ -138,7 +138,7 @@ class IStreamHD_Scraper(scraper.Scraper):
     def __login(self):
         url = urlparse.urljoin(self.base_url, '/get/login.php?p=login')
         data = {'mail': self.username, 'password': self.password}
-        html=self._http_get(url, data=data, cache_limit=0)
+        html=super(IStreamHD_Scraper, self)._cached_http_get(url, self.base_url, self.timeout, data=data, cache_limit=0)
         if html != 'OK':
             raise Exception('istreamhd.org login failed')
         

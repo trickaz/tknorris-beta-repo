@@ -57,20 +57,25 @@ class Shush_Scraper(scraper.Scraper):
         if source_url:
             url = urlparse.urljoin(self.base_url, source_url)
             html = self._http_get(url, cache_limit=.5)
-            match = re.search('proxy\.link=([^&]+)', html)
+            match = re.search(',(http.*?proxy\.swf)&proxy\.link=([^&]+)', html)            
             if match:
-                proxy_link = match.group(1)
-                url = 'http://player.shush.tv/p/plugins_player.php'
-                data = {'url': proxy_link}
-                html = self._http_get(url, data=data, cache_limit=0)
-                if 'fmt_stream_map' in html:
-                    sources = self.__parse_fmt(html)
-                else:
-                    sources = self.__parse_fmt2(html)
-                if sources:
-                    for source in sources:
-                        hoster = {'multi-part': False, 'url': source, 'class': self, 'quality': sources[source], 'host': 'shush.se', 'rating': None, 'views': None}
-                        hosters.append(hoster)
+                swf_link, proxy_link = match.groups()
+                swf_link = swf_link.replace('proxy.swf', 'pluginslist.xml')
+                html = self._http_get(swf_link, cache_limit=0)
+                match = re.search('url="(http.*?)p.swf', html)
+                if match:
+                    player_url = match.group(1)
+                    url = player_url + 'plugins_player.php'
+                    data = {'url': proxy_link}
+                    html = self._http_get(url, data=data, cache_limit=0)
+                    if 'fmt_stream_map' in html:
+                        sources = self.__parse_fmt(html)
+                    else:
+                        sources = self.__parse_fmt2(html)
+                    if sources:
+                        for source in sources:
+                            hoster = {'multi-part': False, 'url': source, 'class': self, 'quality': sources[source], 'host': 'shush.se', 'rating': None, 'views': None}
+                            hosters.append(hoster)
          
         return hosters
 

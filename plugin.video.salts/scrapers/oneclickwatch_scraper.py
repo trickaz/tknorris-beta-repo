@@ -20,13 +20,14 @@ import urllib
 import urlparse
 import re
 import datetime
+import time
 import xbmcaddon
 from salts_lib import log_utils
 from salts_lib.constants import VIDEO_TYPES
 from salts_lib.db_utils import DB_Connection
 from salts_lib.constants import QUALITIES
 
-BASE_URL = 'http://myvideolinks.eu'
+BASE_URL = 'http://oneclickwatch.org'
 
 QUALITY_MAP={}
 QUALITY_MAP[QUALITIES.LOW]=[' CAM ', ' TS ']
@@ -34,7 +35,7 @@ QUALITY_MAP[QUALITIES.HIGH]=['HDRIP', 'DVDRIP']
 QUALITY_MAP[QUALITIES.HD]=['720', '1080', 'BLURAY', 'BRRIP']
 Q_ORDER = {QUALITIES.LOW: 1, QUALITIES.HIGH: 2, QUALITIES.HD: 3}
 
-class MyVidLinks_Scraper(scraper.Scraper):
+class OneClickWatch_Scraper(scraper.Scraper):
     base_url=BASE_URL
     def __init__(self, timeout=scraper.DEFAULT_TIMEOUT):
         self.timeout=timeout
@@ -47,13 +48,13 @@ class MyVidLinks_Scraper(scraper.Scraper):
     
     @classmethod
     def get_name(cls):
-        return 'MyVideoLinks.eu'
+        return 'OneClickWatch'
     
     def resolve_link(self, link):
         return link
 
     def format_source_label(self, item):
-        return '[%s] %s (%s Views) (%s/100)' % (item['quality'], item['host'], item['views'], item['rating'])
+        return '[%s] %s (%s/100)' % (item['quality'], item['host'], item['rating'])
     
     def get_sources(self, video):
         source_url= self.get_url(video)
@@ -62,44 +63,18 @@ class MyVidLinks_Scraper(scraper.Scraper):
             url = urlparse.urljoin(self.base_url,source_url)
             html = self._http_get(url, cache_limit=.5)
 
-            views= None
-            pattern = '<span[^>]+>(\d+)\s+Views'
-            match = re.search(pattern, html)
+            quality = None
+            match = re.search('class="title">([^<]+)', html)
             if match:
-                views=int(match.group(1))
-            
-            if video.video_type == VIDEO_TYPES.MOVIE:
-                return self.__get_movie_links(video, views, html)
-            else:
-                return self.__get_episode_links(video, views, html)
-        return hosters
+                quality = self.__get_quality(video, match.group(1))
+                
+            pattern = '^<a\s+href="([^"]+)"\s+rel="nofollow"'
+            for match in re.finditer(pattern, html, re.M):
+                url=match.group(1)
+                hoster={'multi-part': False, 'class': self, 'views': None, 'url': url, 'rating': None, 'quality': quality}
+                hoster['host']=urlparse.urlsplit(url).hostname
+                hosters.append(hoster)
 
-    def __get_movie_links(self, video, views, html):
-        pattern = 'rel="bookmark"\s+title="Permanent Link to ([^"]+)'
-        match = re.search(pattern, html)
-        if match:
-            q_str=match.group(1)
-            quality = self.get_quality(video, q_str)
-        
-        return self.__get_links(views, html, quality)
-    
-    def __get_episode_links(self, video, views, html):
-        pattern = '<h4>(.*?)</h4>(.*?)</ul>'
-        hosters=[]
-        for match in re.finditer(pattern, html, re.DOTALL):
-            q_str, fragment = match.groups()
-            quality = self.get_quality(video, q_str)
-            hosters += self.__get_links(views, fragment, quality)
-        return hosters
-    
-    def __get_links(self, views, html, quality):
-        pattern = 'li>\s*<a\s+href="(http[^"]+)'
-        hosters=[]
-        for match in re.finditer(pattern, html):
-            url=match.group(1)
-            hoster={'multi-part': False, 'class': self, 'views': views, 'url': url, 'rating': None, 'quality': quality}
-            hoster['host']=urlparse.urlsplit(url).hostname
-            hosters.append(hoster)
         return hosters
     
     def get_url(self, video):
@@ -116,8 +91,7 @@ class MyVidLinks_Scraper(scraper.Scraper):
                 search_title = '%s %s' % (video.title, video.year)
             results = self.search(video.video_type, search_title, video.year)
             if results:
-                # episodes don't tell us the quality on the search screen so just return the 1st result
-                if select == 0 or video.video_type == VIDEO_TYPES.EPISODE:
+                if select == 0:
                     best_result = results[0]
                 else:
                     best_qorder=0
@@ -126,7 +100,7 @@ class MyVidLinks_Scraper(scraper.Scraper):
                         match = re.search('\[(.*)\]$', result['title'])
                         if match:
                             q_str = match.group(1)
-                            quality=self.get_quality(video, q_str)
+                            quality=self.__get_quality(video, q_str)
                             #print 'result: |%s|%s|%s|%s|' % (result, q_str, quality, Q_ORDER[quality])
                             if Q_ORDER[quality]>=best_qorder:
                                 if Q_ORDER[quality] > best_qorder or (quality == QUALITIES.HD and '1080' in q_str and '1080' not in best_qstr):
@@ -139,7 +113,7 @@ class MyVidLinks_Scraper(scraper.Scraper):
                 self.db_connection.set_related_url(video.video_type, video.title, video.year, self.get_name(), url)
         return url
 
-    def get_quality(self, video, q_str):
+    def __get_quality(self, video, q_str):
         q_str.replace(video.title, '')
         q_str.replace(video.year, '')
         q_str = q_str.upper()
@@ -155,7 +129,7 @@ class MyVidLinks_Scraper(scraper.Scraper):
 
     @classmethod
     def get_settings(cls):
-        settings = super(MyVidLinks_Scraper, cls).get_settings()
+        settings = super(OneClickWatch_Scraper, cls).get_settings()
         name=cls.get_name()
         settings.append('         <setting id="%s-filter" type="slider" range="0,180" option="int" label="     Filter results older than (0=No Filter) (days)" default="30" visible="eq(-3,true)"/>' % (name))
         settings.append('         <setting id="%s-select" type="enum" label="     Automatically Select (Movies only)" values="Most Recent|Highest Quality" default="0" visible="eq(-4,true)"/>' % (name))
@@ -168,29 +142,32 @@ class MyVidLinks_Scraper(scraper.Scraper):
         results=[]
         filter_days = datetime.timedelta(days=int(xbmcaddon.Addon().getSetting('%s-filter' % (self.get_name()))))
         today = datetime.date.today()
-        pattern ='<h4>\s*<a\s+href="([^"]+)"\s+rel="bookmark"\s+title="([^"]+)'
+        pattern ='class="title"><a href="([^"]+)[^>]+>([^<]+).*?rel="bookmark">([^<]+)'
         for match in re.finditer(pattern, html, re.DOTALL):
-            url, title  = match.groups('')
+            url, title, date_str  = match.groups('')
             if filter_days:
-                match = re.search('/(\d{4})/(\d{2})/(\d{2})/', url)
-                if match:
-                    year, month, day = match.groups()
-                    post_date = datetime.date(int(year), int(month), int(day))
-                    if today - post_date > filter_days:
-                        continue
-                
+                try: post_date = datetime.datetime.strptime(date_str, '%B %d, %Y').date()
+                except TypeError: post_date = datetime.datetime(*(time.strptime(date_str, '%B %d, %Y')[0:6])).date()
+                if today - post_date > filter_days:
+                    continue
+
             match_year = ''
-            title = title.replace('&#8211;', '-')
             if video_type == VIDEO_TYPES.MOVIE:
                 match = re.search('(.*?)\s*[\[(]?(\d{4})[)\]]?\s*(.*)', title)
                 if match:
                     title, match_year, extra_title = match.groups()
                     title = '%s [%s]' % (title, extra_title)
-
+            else:
+                match_year = ''
+                match = re.search('(.*?)\s*S\d+E\d+\s*(.*)', title)
+                if match:
+                    title, extra_title = match.groups()
+                    title = '%s [%s]' % (title, extra_title)
+                                
             if not year or not match_year or year == match_year:
                 result={'url': url.replace(self.base_url,''), 'title': title, 'year': match_year}
                 results.append(result)
         return results
 
     def _http_get(self, url, cache_limit=8):
-        return super(MyVidLinks_Scraper, self)._cached_http_get(url, self.base_url, self.timeout, cache_limit=cache_limit)
+        return super(OneClickWatch_Scraper, self)._cached_http_get(url, self.base_url, self.timeout, cache_limit=cache_limit)

@@ -31,7 +31,7 @@ from salts_lib.constants import USER_AGENT
 QUALITY_MAP = {'DVD': QUALITIES.HIGH, 'TS': QUALITIES.MEDIUM, 'CAM': QUALITIES.LOW}
 BASE_URL = 'http://dir.alluc.to'
 
-class PW_Scraper(scraper.Scraper):
+class Alluc_Scraper(scraper.Scraper):
     base_url=BASE_URL
     def __init__(self, timeout=scraper.DEFAULT_TIMEOUT):
         self.timeout=timeout
@@ -91,7 +91,7 @@ class PW_Scraper(scraper.Scraper):
         return hosters
 
     def get_url(self, video):
-        return super(PW_Scraper, self)._default_get_url(video)
+        return super(Alluc_Scraper, self)._default_get_url(video)
     
     def search(self, video_type, title, year):
         if video_type == VIDEO_TYPES.MOVIE:
@@ -114,7 +114,7 @@ class PW_Scraper(scraper.Scraper):
     
     def _get_episode_url(self, show_url, video):
         episode_pattern = 'href="([^"]+)" title="watch[^"]+Season\s+%02d\s+Episode\s+%02d\s+online' % (int(video.season), int(video.episode))
-        return super(PW_Scraper, self)._default_get_episode_url(show_url, video, episode_pattern)
+        return super(Alluc_Scraper, self)._default_get_episode_url(show_url, video, episode_pattern)
         
     def _http_get(self, url, data=None, cache_limit=8):
-        return super(PW_Scraper, self)._cached_http_get(url, self.base_url, self.timeout, data=data, cache_limit=cache_limit)
+        return super(Alluc_Scraper, self)._cached_http_get(url, self.base_url, self.timeout, data=data, cache_limit=cache_limit)
