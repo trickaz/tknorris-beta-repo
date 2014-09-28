@@ -383,8 +383,8 @@ def PlaySource(url, title, video_type, primewire_url, resume, imdbnum='', year='
 
     return True
 
-@pw_dispatcher.register(MODES.CH_WATCH, ['imdbnum', 'video_type', 'title', 'primewire_url', 'watched'], ['season', 'episode', 'year', 'dbid'])
-def change_watched(imdbnum, video_type, title, primewire_url , watched, season='', episode='', year='', dbid=None):
+@pw_dispatcher.register(MODES.CH_WATCH, ['video_type', 'title', 'primewire_url', 'watched'], ['imdbnum', 'season', 'episode', 'year', 'dbid'])
+def change_watched(video_type, title, primewire_url , watched, imdbnum='', season='', episode='', year='', dbid=None):
     if watched==True:
         overlay=7
         whattodo='add'
@@ -552,6 +552,11 @@ def AddonMenu():  # homescreen
     db_connection.init_database()
     if utils.has_upgraded():
         utils.log('Showing update popup', xbmc.LOGDEBUG)
+        if _1CH.get_setting('show_splash')=='true':
+            msg = ('The 1Channel (a.k.a. PrimeWire) addon is developed and supported by the team at http://tvaddons.ag.\n\n'
+            'If you are having issues with the 1Channel addon, visit our forums at http://forums.tvaddons.ag for help. \n\n'
+            '[I](FYI, This message is ONLY shown when the 1Channel addon is upgraded to a new version.)[/I]')
+            gui_utils.do_My_TextSplash(msg, TxtColor='0xFF00FF00', BorderWidth=45)
         utils.TextBox()
         adn = xbmcaddon.Addon('plugin.video.1channel')
         adn.setSetting('domain', 'http://www.primewire.ag')
@@ -575,7 +580,7 @@ def AddonMenu():  # homescreen
     _1CH.add_directory({'mode': MODES.HELP}, {'title': 'Help'}, img=art('help.png'), fanart=art('fanart.png'))
     # _1CH.add_directory({'mode': 'test'},   {'title':  'Test'}, img=art('settings.png'), fanart=art('fanart.png'))
     
-    xbmcplugin.endOfDirectory(int(sys.argv[1]))
+    xbmcplugin.endOfDirectory(int(sys.argv[1]), cacheToDisc=False)
 
 @pw_dispatcher.register(MODES.LIST_MENU, ['section'])
 def BrowseListMenu(section):
@@ -825,9 +830,9 @@ def create_item(section_params,title,year,img,url, imdbnum='', season='', episod
     #utils.log('Create Item: %s, %s, %s, %s, %s, %s, %s, %s, %s' % (section_params, title, year, img, url, imdbnum, season, episode, totalItems))
     if menu_items is None: menu_items=[]
     if section_params['nextmode']==MODES.GET_SOURCES and _1CH.get_setting('auto-play')=='true':
-        queries = {'mode': MODES.SELECT_SOURCES, 'title': title, 'url': url, 'img': img, 'imdbnum': imdbnum, 'video_type': section_params['video_type']}
+        queries = {'mode': MODES.SELECT_SOURCES, 'title': title, 'url': url, 'img': img, 'imdbnum': imdbnum, 'video_type': section_params['video_type'], 'year': year}
         if _1CH.get_setting('source-win')=='Dialog':
-            runstring = 'RunPlugin(%s)' % _1CH.build_plugin_url(queries)
+            runstring = 'PlayMedia(%s)' % _1CH.build_plugin_url(queries)
         else:
             runstring = 'Container.Update(%s)' % _1CH.build_plugin_url(queries)
             
@@ -1816,9 +1821,9 @@ def movie_update(section, genre, letter, sort, page):
     section = 'movies'
     GetFilteredResults(section, genre, letter, sort, page, paginate=True)
 
-@pw_dispatcher.register(MODES.SELECT_SOURCES, ['url', 'title', 'img', 'year', 'imdbnum', 'dialog'])
-def select_sources(url, title, img, year, imdbnum, dialog):
-    get_sources(url, title, img, year, imdbnum, dialog, False)
+@pw_dispatcher.register(MODES.SELECT_SOURCES, ['url', 'title', 'year'], ['imdbnum', 'img'])
+def select_sources(url, title, year, img='', imdbnum=''):
+    get_sources(url, title, year=year, img=img, imdbnum=imdbnum, respect_auto=False)
 
 @pw_dispatcher.register(MODES.REFRESH_META, ['video_type', 'title', 'alt_id'], ['imdbnum', 'year'])
 def refresh_meta(video_type, title, alt_id, imdbnum='', year=''):
@@ -1882,7 +1887,7 @@ def main(argv=None):
         return
 
     mode = _1CH.queries.get('mode', None)
-    if mode in [MODES.GET_SOURCES, MODES.PLAY_SOURCE, MODES.PLAY_TRAILER, MODES.RES_SETTINGS]:
+    if mode in [MODES.GET_SOURCES, MODES.PLAY_SOURCE, MODES.PLAY_TRAILER, MODES.RES_SETTINGS, MODES.SELECT_SOURCES]:
         global urlresolver
         import urlresolver
         
