@@ -115,7 +115,7 @@ class OneClickWatch_Scraper(scraper.Scraper):
 
     def __get_quality(self, video, q_str):
         q_str.replace(video.title, '')
-        q_str.replace(video.year, '')
+        q_str.replace(str(video.year), '')
         q_str = q_str.upper()
         # Assume movies are low quality, tv shows are high quality
         if video.video_type == VIDEO_TYPES.MOVIE:

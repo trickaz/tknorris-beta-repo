@@ -64,7 +64,7 @@ class Vidics_Scraper(scraper.Scraper):
             url = urlparse.urljoin(self.base_url, source_url)
             html = self._http_get(url, cache_limit=.5)
             
-            match = re.search('(.*?)Show All Links', html, re.DOTALL)
+            match = re.search('Links:(.*?)Show All Links', html, re.DOTALL)
             if match:
                 fragment = match.group(1)
                 

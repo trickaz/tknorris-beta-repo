@@ -1,3 +1,16 @@
+[B]Version 0.0.20[/B]
+- Set first_aired and released to localtime in infolabels
+- Fix multi-process debug code left in
+- Fix quality settings on oneclickwatch scraper
+- Add code to make encrpted shush.se sources work
+- Add watchmovies scraper
+- Add additional Iconic theme images
+- Add Iconic fanart
+- Fix add to library for movies
+- Fix occasional timeout not being caught from trakt
+- Reduce vidics.ch scraper re to reduce load on system
+- Better handle yify.tv failures
+
 [B]Version 0.0.19[/B]
 - Improve url resolution logic for shush.se
 - Convert show Air Time to Local Time

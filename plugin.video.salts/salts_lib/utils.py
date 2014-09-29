@@ -6,6 +6,7 @@ import datetime
 import xbmc
 import xbmcgui
 import xbmcplugin
+import xbmcaddon
 import log_utils
 import sys
 import hashlib
@@ -37,7 +38,6 @@ elif P_MODE == P_MODES.PROCESSES:
         import multiprocessing
         from multiprocessing import Queue
         from Queue import Empty
-        raise ImportError
     except ImportError:
         import threading
         from Queue import Queue, Empty
@@ -47,6 +47,17 @@ elif P_MODE == P_MODES.PROCESSES:
 
 trakt_api=Trakt_API(username,password, use_https, trakt_timeout)
 db_connection=DB_Connection()
+
+THEME_LIST = ['Shine', 'Luna_Blue', 'Iconic']
+THEME = THEME_LIST[int(ADDON.get_setting('theme'))]
+if xbmc.getCondVisibility('System.HasAddon(script.salts.themepak)'):
+    themepak_path = xbmcaddon.Addon('script.salts.themepak').getAddonInfo('path')
+else:
+    themepak_path=ADDON.get_path()
+THEME_PATH = os.path.join(themepak_path, 'art', 'themes', THEME)
+
+def art(name): 
+    return os.path.join(THEME_PATH, name)
 
 def choose_list(username=None):
     lists = trakt_api.get_lists(username)
@@ -105,13 +116,14 @@ def make_list_item(label, meta):
     return listitem
 
 def make_art(show, fanart=''):
-    art={'banner': '', 'fanart': fanart, 'thumb': '', 'poster': ''}
+    if not fanart: fanart = art('fanart.jpg')
+    art_dict={'banner': '', 'fanart': fanart, 'thumb': '', 'poster': ''}
     if 'images' in show:
-        if 'banner' in show['images']: art['banner']=show['images']['banner']
-        if 'fanart' in show['images']: art['fanart']=show['images']['fanart']
-        if 'poster' in show['images']: art['thumb']=art['poster']=show['images']['poster']
-        if 'screen' in show['images']: art['thumb']=art['poster']=show['images']['screen']
-    return art
+        if 'banner' in show['images']: art_dict['banner']=show['images']['banner']
+        if 'fanart' in show['images']: art_dict['fanart']=show['images']['fanart']
+        if 'poster' in show['images']: art_dict['thumb']=art_dict['poster']=show['images']['poster']
+        if 'screen' in show['images']: art_dict['thumb']=art_dict['poster']=show['images']['screen']
+    return art_dict
 
 def make_info(item, show=''):
     log_utils.log('Making Info: Show: %s' % (show), xbmc.LOGDEBUG)
@@ -139,17 +151,19 @@ def make_info(item, show=''):
         info['rating']=int(item['ratings']['percentage'])/10.0
         info['votes']=item['ratings']['votes']
 
-    try:
-        if 'first_aired' in item: info['aired']=info['premiered']=time.strftime('%Y-%m-%d', time.localtime(item['first_aired']))
-    except ValueError: # windows throws a ValueError on negative values to localtime  
-        d=datetime.datetime.fromtimestamp(0) + datetime.timedelta(seconds=item['first_aired'])
-        info['aired']=info['premiered']=d.strftime('%Y-%m-%d')
+        if 'first_aired' in item:
+                local_air_time = get_local_airtime(item['first_aired'])
+                try: info['aired']=info['premiered']=time.strftime('%Y-%m-%d', time.localtime(local_air_time))
+                except ValueError: # windows throws a ValueError on negative values to localtime  
+                    d=datetime.datetime.fromtimestamp(0) + datetime.timedelta(seconds=local_air_time)
+                    info['aired']=info['premiered']=d.strftime('%Y-%m-%d')
         
-    try:
-        if 'released' in item: info['premiered']=time.strftime('%Y-%m-%d', time.localtime(item['released']))
-    except ValueError: # windows throws a ValueError on negative values to localtime
-        d=datetime.datetime.fromtimestamp(0) + datetime.timedelta(seconds=item['released'])
-        info['premiered']=d.strftime('%Y-%m-%d')
+        if 'released' in item:
+            local_released = get_local_airtime(item['released'])
+            try: info['premiered']=time.strftime('%Y-%m-%d', time.localtime(local_released))
+            except ValueError: # windows throws a ValueError on negative values to localtime
+                d=datetime.datetime.fromtimestamp(0) + datetime.timedelta(seconds=local_released)
+                info['premiered']=d.strftime('%Y-%m-%d')
          
 
     if 'seasons' in item:

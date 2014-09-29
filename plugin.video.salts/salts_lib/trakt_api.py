@@ -253,7 +253,7 @@ class Trakt_API():
                         return
                     else:
                         raise
-                elif isinstance(e.reason, socket.timeout):
+                elif isinstance(e.reason, socket.timeout) or isinstance(e.reason, ssl.SSLError):
                     if cached_result:
                         result = cached_result
                         log_utils.log('Temporary Trakt Error (%s). Using Cached Page Instead' % (str(e)), xbmc.LOGWARNING)

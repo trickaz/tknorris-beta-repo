@@ -53,8 +53,8 @@ class YIFY_Scraper(scraper.Scraper):
         tries=1
         while tries<=MAX_TRIES:
             html = self._http_get(url, data=data, cache_limit=0)
-            log_utils.log('Initial Data (%s): %s' % (tries, html), xbmc.LOGDEBUG)
-            if html:
+            log_utils.log('Initial Data (%s): |%s|' % (tries, html), xbmc.LOGDEBUG)
+            if html.strip():
                 break 
             tries+=1
         else:

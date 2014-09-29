@@ -22,7 +22,9 @@ import urlparse
 import xbmcaddon
 import xbmc
 import json
+import base64
 from salts_lib.db_utils import DB_Connection
+from salts_lib import GKDecrypter
 from salts_lib import log_utils
 from salts_lib.constants import VIDEO_TYPES
 from salts_lib.constants import QUALITIES
@@ -60,22 +62,29 @@ class Shush_Scraper(scraper.Scraper):
             match = re.search(',(http.*?proxy\.swf)&proxy\.link=([^&]+)', html)            
             if match:
                 swf_link, proxy_link = match.groups()
-                swf_link = swf_link.replace('proxy.swf', 'pluginslist.xml')
-                html = self._http_get(swf_link, cache_limit=0)
-                match = re.search('url="(http.*?)p.swf', html)
-                if match:
-                    player_url = match.group(1)
-                    url = player_url + 'plugins_player.php'
-                    data = {'url': proxy_link}
-                    html = self._http_get(url, data=data, cache_limit=0)
-                    if 'fmt_stream_map' in html:
-                        sources = self.__parse_fmt(html)
-                    else:
-                        sources = self.__parse_fmt2(html)
-                    if sources:
-                        for source in sources:
-                            hoster = {'multi-part': False, 'url': source, 'class': self, 'quality': sources[source], 'host': 'shush.se', 'rating': None, 'views': None}
-                            hosters.append(hoster)
+                if proxy_link.startswith('http'):
+                    swf_link = swf_link.replace('proxy.swf', 'pluginslist.xml')
+                    html = self._http_get(swf_link, cache_limit=0)
+                    match = re.search('url="(http.*?)p.swf', html)
+                    if match:
+                        player_url = match.group(1)
+                        url = player_url + 'plugins_player.php'
+                        data = {'url': proxy_link}
+                        html = self._http_get(url, data=data, cache_limit=0)
+                        if 'fmt_stream_map' in html:
+                            sources = self.__parse_fmt(html)
+                        else:
+                            sources = self.__parse_fmt2(html)
+
+                        if sources:
+                            for source in sources:
+                                hoster = {'multi-part': False, 'url': source, 'class': self, 'quality': sources[source], 'host': 'shush.se', 'rating': None, 'views': None}
+                                hosters.append(hoster)
+                else:
+                    proxy_link = proxy_link.split('*', 1)[-1]
+                    stream_url = GKDecrypter.decrypter(198,128).decrypt(proxy_link, base64.urlsafe_b64decode('djRBdVhhalplRm83akFNZ1VOWkI='),'ECB').split('\0')[0]
+                    hoster = {'multi-part': False, 'url': stream_url, 'class': self, 'quality': QUALITIES.HIGH, 'host': urlparse.urlsplit(stream_url).hostname, 'rating': None, 'views': None}
+                    hosters.append(hoster)
          
         return hosters
 

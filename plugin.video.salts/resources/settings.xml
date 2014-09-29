@@ -150,6 +150,9 @@
          <setting id="OneClickWatch-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
          <setting id="OneClickWatch-filter" type="slider" range="0,180" option="int" label="     Filter results older than (0=No Filter) (days)" default="30" visible="eq(-3,true)"/>
          <setting id="OneClickWatch-select" type="enum" label="     Automatically Select (Movies only)" values="Most Recent|Highest Quality" default="0" visible="eq(-4,true)"/>
+         <setting id="WatchMovies-enable" type="bool" label="WatchMovies Enabled" default="true" visible="true"/>
+         <setting id="WatchMovies-base_url" type="text" label="     Base Url" default="http://watchmovies.to" visible="eq(-1,true)"/>
+         <setting id="WatchMovies-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
     </category>
 
     <category label="Subtitles">

@@ -1,7 +1,7 @@
 __all__ = ['scraper', 'dummy_scraper', 'pw_scraper', 'uflix_scraper', 'watchseries_scraper', 'movie25_scraper', 'merdb_scraper', '2movies_scraper', 'icefilms_scraper', 'afdah_scraper', 
            'istreamhd_scraper', 'movieshd_scraper', 'simplymovies_scraper', 'yifytv_scraper', 'viooz_scraper', 'filmstreaming_scraper', 'allucto_scraper', 'onlinemovies_scraper',
            'oneclick_scraper', 'myvideolinks_scraper', 'filmikz_scraper', 'iwatch_scraper', 'popcornered_scraper', 'shush_scraper', 'ororotv_scraper', 'view47_scraper', 'vidics_scraper',
-           'oneclickwatch_scraper']
+           'oneclickwatch_scraper', 'watchmovies_scraper']
 
 import re
 import os
