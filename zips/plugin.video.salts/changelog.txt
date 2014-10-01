@@ -1,3 +1,6 @@
+[B]Version 0.0.22[/B]
+- Fix total_seconds not existing in <2.7 python
+
 [B]Version 0.0.21[/B]
 - Improve onlinemovies scraper
 - Add ability to turn off menu items

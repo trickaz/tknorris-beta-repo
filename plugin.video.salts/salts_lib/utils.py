@@ -469,7 +469,9 @@ def iso_2_utc(iso_ts):
     utc_dt = d - dif
     epoch = datetime.datetime.utcfromtimestamp(0)
     delta = utc_dt - epoch
-    return delta.total_seconds()
+    try: seconds = delta.total_seconds() # works only on 2.7
+    except: seconds = delta.seconds + delta.days * 24 * 3600 # close enough
+    return seconds
 
 def fa_2_utc(first_aired):
     """
