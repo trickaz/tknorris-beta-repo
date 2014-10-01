@@ -12,7 +12,6 @@ import sys
 import hashlib
 from constants import *
 from scrapers import * # import all scrapers into this namespace
-from scrapers import ScraperVideo
 from addon.common.addon import Addon
 from trakt_api import Trakt_API
 from db_utils import DB_Connection
@@ -126,8 +125,8 @@ def make_art(show, fanart=''):
     return art_dict
 
 def make_info(item, show=''):
-    log_utils.log('Making Info: Show: %s' % (show), xbmc.LOGDEBUG)
-    log_utils.log('Making Info: Item: %s' % (item), xbmc.LOGDEBUG)
+    #log_utils.log('Making Info: Show: %s' % (show), xbmc.LOGDEBUG)
+    #log_utils.log('Making Info: Item: %s' % (item), xbmc.LOGDEBUG)
     info={}
     info['title']=item['title']
     if 'overview' in item: info['plot']=info['plotoutline']=item['overview']
@@ -151,19 +150,18 @@ def make_info(item, show=''):
         info['rating']=int(item['ratings']['percentage'])/10.0
         info['votes']=item['ratings']['votes']
 
-        if 'first_aired' in item:
-                local_air_time = get_local_airtime(item['first_aired'])
-                try: info['aired']=info['premiered']=time.strftime('%Y-%m-%d', time.localtime(local_air_time))
-                except ValueError: # windows throws a ValueError on negative values to localtime  
-                    d=datetime.datetime.fromtimestamp(0) + datetime.timedelta(seconds=local_air_time)
-                    info['aired']=info['premiered']=d.strftime('%Y-%m-%d')
-        
-        if 'released' in item:
-            local_released = get_local_airtime(item['released'])
-            try: info['premiered']=time.strftime('%Y-%m-%d', time.localtime(local_released))
-            except ValueError: # windows throws a ValueError on negative values to localtime
-                d=datetime.datetime.fromtimestamp(0) + datetime.timedelta(seconds=local_released)
-                info['premiered']=d.strftime('%Y-%m-%d')
+    if 'first_aired_iso' in item or 'first_aired' in item:
+        utc_air_time = iso_2_utc(item['first_aired_iso']) if 'first_aired_iso' in item else fa_2_utc(item['first_aired'])
+        try: info['aired']=info['premiered']=time.strftime('%Y-%m-%d', time.localtime(utc_air_time))
+        except ValueError: # windows throws a ValueError on negative values to localtime  
+            d=datetime.datetime.fromtimestamp(0) + datetime.timedelta(seconds=utc_air_time)
+            info['aired']=info['premiered']=d.strftime('%Y-%m-%d')
+     
+    if 'released' in item:
+        try: info['premiered']=time.strftime('%Y-%m-%d', time.localtime(item['released']))
+        except ValueError: # windows throws a ValueError on negative values to localtime
+            d=datetime.datetime.fromtimestamp(0) + datetime.timedelta(seconds=item['released'])
+            info['premiered']=d.strftime('%Y-%m-%d')
          
 
     if 'seasons' in item:
@@ -262,13 +260,15 @@ def make_source_sort_key():
     sso=ADDON.get_setting('source_sort_order')
     sort_key={}
     i=0
+    scrapers = relevant_scrapers(include_disabled=True)
+    scraper_names = [scraper.get_name() for scraper in scrapers]
     if sso:
         sources = sso.split('|')
         sort_key={}
         for i,source in enumerate(sources):
-            sort_key[source]=-i
+            if source in scraper_names:
+                sort_key[source]=-i
         
-    scrapers = relevant_scrapers(include_disabled=True)
     for j, scraper in enumerate(scrapers):
         if scraper.get_name() not in sort_key:
             sort_key[scraper.get_name()]=-(i+j)
@@ -443,8 +443,42 @@ def make_day(date):
 
     return date
 
-def get_local_airtime(air_time):
-    return air_time - (8*60*60 - time.timezone)
+def iso_2_utc(iso_ts):
+    if not iso_ts or iso_ts is None: return 0
+    delim = iso_ts.rfind('+')
+    if delim == -1:  delim = iso_ts.rfind('-')
+    
+    if delim>-1:
+        ts = iso_ts[:delim]
+        sign = iso_ts[delim]
+        tz = iso_ts[delim+1:]
+    else:
+        ts = iso_ts
+        tz = None
+    
+    try: d=datetime.datetime.strptime(ts,'%Y-%m-%dT%H:%M:%S')
+    except TypeError: d = datetime.datetime(*(time.strptime(ts, '%Y-%m-%dT%H:%M:%S')[0:6]))
+    
+    hours, minutes = tz.split(':')
+    hours = int(hours)
+    minutes= int(minutes)
+    if sign == '-':
+        hours = -hours
+        minutes = -minutes
+    dif = datetime.timedelta(minutes=minutes, hours=hours)
+    utc_dt = d - dif
+    epoch = datetime.datetime.utcfromtimestamp(0)
+    delta = utc_dt - epoch
+    return delta.total_seconds()
+
+def fa_2_utc(first_aired):
+    """
+    This should only require subtracting off the difference between PST and UTC, but it doesn't
+    and I don't know why. Regardless, this works.
+    """
+    # dif in seconds between local timezone and gmt timezone
+    utc_dif = time.mktime(time.gmtime()) - time.mktime(time.localtime())
+    return first_aired - (8*60*60 - utc_dif)
 
 def valid_account():
     username=ADDON.get_setting('username')
@@ -575,3 +609,6 @@ def do_disable_check():
                     ret = dialog.yesno('SALTS', line1, line2, line3, 'Keep Enabled', 'Disable It')
                     if ret:
                         ADDON.set_setting('%s-enable' % (cls.get_name()), 'false')
+
+def menu_on(menu):
+    return ADDON.get_setting('show_%s' % (menu))=='true'

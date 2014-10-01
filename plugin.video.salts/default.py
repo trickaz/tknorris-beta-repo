@@ -24,7 +24,6 @@ import xbmcplugin
 import xbmcgui
 import xbmc
 import xbmcvfs
-import xbmcaddon
 from addon.common.addon import Addon
 from salts_lib.db_utils import DB_Connection
 from salts_lib.url_dispatcher import URL_Dispatcher
@@ -94,23 +93,26 @@ def browse_menu(section):
         section_label='Movies'
         search_img='movies_search.png'
 
-    _SALTS.add_directory({'mode': MODES.TRENDING, 'section': section}, {'title': 'Trending %s' % (section_label)}, img=utils.art('trending.png'), fanart=utils.art('fanart.jpg'))
-    if VALID_ACCOUNT: _SALTS.add_directory({'mode': MODES.RECOMMEND, 'section': section}, {'title': 'Recommended %s' % (section_label)}, img=utils.art('recommended.png'), fanart=utils.art('fanart.jpg'))
-    if VALID_ACCOUNT: add_refresh_item({'mode': MODES.SHOW_COLLECTION, 'section': section}, 'My %s Collection' % (section_label[:-1]), utils.art('collection.png'), utils.art('fanart.jpg'))
-    if VALID_ACCOUNT: _SALTS.add_directory({'mode': MODES.SHOW_FAVORITES, 'section': section}, {'title': 'My Favorites'}, img=utils.art('my_favorites.png'), fanart=utils.art('fanart.jpg'))
-    if VALID_ACCOUNT: _SALTS.add_directory({'mode': MODES.MANAGE_SUBS, 'section': section}, {'title': 'My Subscriptions'}, img=utils.art('my_subscriptions.png'), fanart=utils.art('fanart.jpg'))
-    if VALID_ACCOUNT: _SALTS.add_directory({'mode': MODES.SHOW_WATCHLIST, 'section': section}, {'title': 'My Watchlist'}, img=utils.art('my_watchlist.png'), fanart=utils.art('fanart.jpg'))
-    if VALID_ACCOUNT: _SALTS.add_directory({'mode': MODES.MY_LISTS, 'section': section}, {'title': 'My Lists'}, img=utils.art('my_lists.png'), fanart=utils.art('fanart.jpg'))
-    _SALTS.add_directory({'mode': MODES.OTHER_LISTS, 'section': section}, {'title': 'Other Lists'}, img=utils.art('other_lists.png'), fanart=utils.art('fanart.jpg'))
+    if utils.menu_on('trending'): _SALTS.add_directory({'mode': MODES.TRENDING, 'section': section}, {'title': 'Trending %s' % (section_label)}, img=utils.art('trending.png'), fanart=utils.art('fanart.jpg'))
+    if VALID_ACCOUNT:
+        if utils.menu_on('recommended'): _SALTS.add_directory({'mode': MODES.RECOMMEND, 'section': section}, {'title': 'Recommended %s' % (section_label)}, img=utils.art('recommended.png'), fanart=utils.art('fanart.jpg'))
+        if utils.menu_on('collection'): add_refresh_item({'mode': MODES.SHOW_COLLECTION, 'section': section}, 'My %s Collection' % (section_label[:-1]), utils.art('collection.png'), utils.art('fanart.jpg'))
+        if utils.menu_on('favorites'): _SALTS.add_directory({'mode': MODES.SHOW_FAVORITES, 'section': section}, {'title': 'My Favorites'}, img=utils.art('my_favorites.png'), fanart=utils.art('fanart.jpg'))
+        if utils.menu_on('subscriptions'): _SALTS.add_directory({'mode': MODES.MANAGE_SUBS, 'section': section}, {'title': 'My Subscriptions'}, img=utils.art('my_subscriptions.png'), fanart=utils.art('fanart.jpg'))
+        if utils.menu_on('watchlist'): _SALTS.add_directory({'mode': MODES.SHOW_WATCHLIST, 'section': section}, {'title': 'My Watchlist'}, img=utils.art('my_watchlist.png'), fanart=utils.art('fanart.jpg'))
+        if utils.menu_on('my_lists'): _SALTS.add_directory({'mode': MODES.MY_LISTS, 'section': section}, {'title': 'My Lists'}, img=utils.art('my_lists.png'), fanart=utils.art('fanart.jpg'))
+    if utils.menu_on('other_lists'): _SALTS.add_directory({'mode': MODES.OTHER_LISTS, 'section': section}, {'title': 'Other Lists'}, img=utils.art('other_lists.png'), fanart=utils.art('fanart.jpg'))
     if section==SECTIONS.TV:
-        if VALID_ACCOUNT: add_refresh_item({'mode': MODES.SHOW_PROGRESS}, 'My Next Episodes', utils.art('my_progress.png'), utils.art('fanart.jpg'))
-        if VALID_ACCOUNT: add_refresh_item({'mode': MODES.MY_CAL}, 'My Calendar', utils.art('my_calendar.png'), utils.art('fanart.jpg'))
-        add_refresh_item({'mode': MODES.CAL}, 'General Calendar', utils.art('calendar.png'), utils.art('fanart.jpg'))
-        add_refresh_item({'mode': MODES.PREMIERES}, 'Premiere Calendar', utils.art('premiere_calendar.png'), utils.art('fanart.jpg'))
-        if VALID_ACCOUNT: add_refresh_item({'mode': MODES.FRIENDS_EPISODE, 'section': section}, 'Friends Episode Activity', utils.art('friends_episode.png'), utils.art('fanart.jpg'))
-
-    if VALID_ACCOUNT: add_refresh_item({'mode': MODES.FRIENDS, 'section': section}, 'Friends Activity', utils.art('friends.png'), utils.art('fanart.jpg'))
-    _SALTS.add_directory({'mode': MODES.SEARCH, 'section': section}, {'title': 'Search'}, img=utils.art(search_img), fanart=utils.art('fanart.jpg'))
+        if VALID_ACCOUNT: 
+            if utils.menu_on('progress'): add_refresh_item({'mode': MODES.SHOW_PROGRESS}, 'My Next Episodes', utils.art('my_progress.png'), utils.art('fanart.jpg'))
+            if utils.menu_on('my_cal'): add_refresh_item({'mode': MODES.MY_CAL}, 'My Calendar', utils.art('my_calendar.png'), utils.art('fanart.jpg'))
+        if utils.menu_on('general_cal'): add_refresh_item({'mode': MODES.CAL}, 'General Calendar', utils.art('calendar.png'), utils.art('fanart.jpg'))
+        if utils.menu_on('premiere_cal'): add_refresh_item({'mode': MODES.PREMIERES}, 'Premiere Calendar', utils.art('premiere_calendar.png'), utils.art('fanart.jpg'))
+        if VALID_ACCOUNT:
+            if utils.menu_on('friends'): add_refresh_item({'mode': MODES.FRIENDS_EPISODE, 'section': section}, 'Friends Episode Activity', utils.art('friends_episode.png'), utils.art('fanart.jpg'))
+    if VALID_ACCOUNT:
+        if utils.menu_on('friends'): add_refresh_item({'mode': MODES.FRIENDS, 'section': section}, 'Friends Activity', utils.art('friends.png'), utils.art('fanart.jpg'))
+    if utils.menu_on('search'): _SALTS.add_directory({'mode': MODES.SEARCH, 'section': section}, {'title': 'Search'}, img=utils.art(search_img), fanart=utils.art('fanart.jpg'))
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
 def add_refresh_item(queries, label, thumb, fanart):
@@ -377,11 +379,11 @@ def show_progress():
     items = trakt_api.get_progress(SORT_MAP[int(sort_index)])
     for item in items:
         if 'next_episode' in item and item['next_episode']:
-            local_air_time = utils.get_local_airtime(item['next_episode']['first_aired'])
-            if _SALTS.get_setting('show_unaired_next')=='true' or local_air_time<=time.time():
+            first_aired_utc = utils.fa_2_utc(item['next_episode']['first_aired'])
+            if _SALTS.get_setting('show_unaired_next')=='true' or first_aired_utc <=time.time():
                 show=item['show']
                 fanart=item['show']['images']['fanart']
-                date=utils.make_day(time.strftime('%Y-%m-%d', time.localtime(local_air_time)))
+                date=utils.make_day(time.strftime('%Y-%m-%d', time.localtime(first_aired_utc)))
                 liz, liz_url = make_episode_item(show, item['next_episode'], fanart)
                 label=liz.getLabel()
                 label = '[[COLOR deeppink]%s[/COLOR]] %s - %s' % (date, show['title'], label.decode('utf-8', 'replace'))
@@ -486,9 +488,9 @@ def browse_episodes(slug, season, fanart):
     totalItems=len(episodes)
     now=time.time()
     for episode in episodes:
-        local_air_time = utils.get_local_airtime(episode['first_aired'])
-        if _SALTS.get_setting('show_unaired')=='true' or local_air_time <= now:
-            if _SALTS.get_setting('show_unknown')=='true' or local_air_time:
+        utc_air_time = utils.iso_2_utc(episode['first_aired_iso'])
+        if _SALTS.get_setting('show_unaired')=='true' or utc_air_time <= now:
+            if _SALTS.get_setting('show_unknown')=='true' or utc_air_time:
                 liz, liz_url =make_episode_item(show, episode, fanart)
                 xbmcplugin.addDirectoryItem(int(sys.argv[1]), liz_url, liz,isFolder=(liz.getProperty('isPlayable')!='true'),totalItems=totalItems)
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
@@ -832,15 +834,12 @@ def rate_media(section, id_type, show_id, season='', episode=''):
     if False and xbmc.getCondVisibility('System.HasAddon(script.trakt)'):
         run = 'RunScript(script.trakt, action=rate, media_type=%s, remoteid=%s'
         if section == SECTIONS.MOVIES:
-            rating_type = 'movie'
-            run = run + ')' % (rating_type, show_id)
+            run = (run + ')') % ('movie', show_id)
         else:
             if season and episode:
-                rating_type = 'episode'
-                run = (run +', season=%s, episode=%s)') % (rating_type, show_id, season, episode)
+                run = (run +', season=%s, episode=%s)') % ('episode', show_id, season, episode)
             else:
-                rating_type = 'show'
-                run = run + ')' % (rating_type, show_id)
+                run = (run + ')') % ('show', show_id)
         xbmc.executebuiltin(run)
     else:
         item = {id_type: show_id}
@@ -1151,7 +1150,7 @@ def make_dir_from_list(section, list_data, slug=None):
             for item in progress:
                 for id_type in ['imdb_id', 'tvdb_id']:
                     if id_type in item['show'] and item['show'][id_type]:
-                        if item['next_episode'] and utils.get_local_airtime(item['next_episode']['first_aired'])<now:
+                        if item['next_episode'] and item['next_episode']['first_aired']<now:
                             watched[item['show'][id_type]]=False
                         else:
                             watched[item['show'][id_type]]=True
@@ -1220,14 +1219,20 @@ def make_dir_from_cal(mode, start_date, days):
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
 def make_episode_item(show, episode, fanart, show_subs=True):
-    log_utils.log('Make Episode: Show: %s, Episode: %s, Fanart: %s, Show Subs: %s' % (show, episode, fanart, show_subs), xbmc.LOGDEBUG)
+    #log_utils.log('Make Episode: Show: %s, Episode: %s, Fanart: %s, Show Subs: %s' % (show, episode, fanart, show_subs), xbmc.LOGDEBUG)
+    log_utils.log('Make Episode: Episode: %s' % (episode), xbmc.LOGDEBUG)
     folder = _SALTS.get_setting('source-win')=='Directory' and _SALTS.get_setting('auto-play')=='false'
     show['title']=re.sub(' \(\d{4}\)$','',show['title'])
     if 'episode' in episode: episode_num=episode['episode']
     else:  episode_num=episode['number']
     label = '%sx%s %s' % (episode['season'], episode_num, episode['title'])
     
-    if _SALTS.get_setting('unaired_indicator')=='true' and (not episode['first_aired'] or utils.get_local_airtime(episode['first_aired'])>time.time()):
+    if 'first_aired_iso' in episode: utc_air_time = utils.iso_2_utc(episode['first_aired_iso'])
+    else: utc_air_time = utils.fa_2_utc(episode['first_aired'])
+    
+    log_utils.log('First Aired: Title: %s S/E: %s/%s fa: %s, utc: %s, local: %s' %
+                  (show['title'], episode['season'], episode_num, episode['first_aired'], utc_air_time, time.asctime(time.localtime(utc_air_time))), xbmc.LOGDEBUG)
+    if _SALTS.get_setting('unaired_indicator')=='true' and (not episode['first_aired'] or utc_air_time>time.time()):
         label = '[I][COLOR chocolate]%s[/COLOR][/I]' % (label)
     if show_subs and utils.srt_indicators_enabled():
         srt_scraper=SRT_Scraper()

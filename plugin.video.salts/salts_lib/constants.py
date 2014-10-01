@@ -37,9 +37,7 @@ QUALITIES = __enum(LOW='Low', MEDIUM='Medium', HIGH='High', HD='HD')
 DIRS = __enum(UP='up', DOWN='down')
 P_MODES = __enum(THREADS=0, PROCESSES=1, NONE=2)
 WATCHLIST_SLUG = 'watchlist_slug'
-USER_AGENT = ("User-Agent:Mozilla/5.0 (Windows NT 6.2; WOW64)"
-              "AppleWebKit/537.17 (KHTML, like Gecko)"
-              "Chrome/24.0.1312.56")
+USER_AGENT = ("Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:32.0) Gecko/20100101 Firefox/32.0")
 
 # sort keys need to be defined such that "best" have highest values
 # unknown (i.e. None) is always worst

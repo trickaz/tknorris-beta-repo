@@ -86,26 +86,28 @@ class OnlineMovies_Scraper(scraper.Scraper):
         search_url += urllib.quote_plus('%s %s' % (title, year))
         html = self._http_get(search_url, cache_limit=.25)
         results=[]
-        pattern ='<ul class="listing-videos(.*?)</ul>'
-        match = re.search(pattern, html, re.DOTALL)
-        if match:
-            fragment = match.group(1)
-            pattern='href="([^"]+)"\s+title="([^"]+)'
-            for match in re.finditer(pattern, fragment):
-                url, title_year = match.groups()
-                if re.search('S\d{2}E\d{2}', title_year): continue
-                match = re.search('(.*?)\s*(?:\((\d+)\)).*', title_year)
-                if match:
-                    match_title, match_year = match.groups()
-                else:
-                    match = re.search('(.*?)\s*(?:(\d{4}))$', title_year)
+        if not re.search('Sorry, but nothing matched', html):
+            pattern ='<ul class="listing-videos(.*?)</ul>'
+            match = re.search(pattern, html, re.DOTALL)
+            if match:
+                fragment = match.group(1)
+                pattern='href="([^"]+)"\s+title="([^"]+)'
+                for match in re.finditer(pattern, fragment):
+                    url, title_year = match.groups()
+                    if re.search('S\d{2}E\d{2}', title_year): continue
+                    match = re.search('(.*?)\s*(?:\((\d+)\)).*', title_year)
                     if match:
                         match_title, match_year = match.groups()
                     else:
-                        match_title=title_year
-                        match_year=''
-                result = {'title': match_title, 'year': match_year, 'url': url.replace(self.base_url,'')}
-                results.append(result)
+                        match = re.search('(.*?)\s*(?:(\d{4}))$', title_year)
+                        if match:
+                            match_title, match_year = match.groups()
+                        else:
+                            match_title=title_year
+                            match_year=''
+                    if not year or not match_year or year == match_year:
+                        result = {'title': match_title, 'year': match_year, 'url': url.replace(self.base_url,'')}
+                        results.append(result)
 
         return results
 

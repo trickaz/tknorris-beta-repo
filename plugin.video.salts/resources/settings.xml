@@ -9,6 +9,22 @@
 	    <setting id="unaired_indicator" type="bool" label="     Show an Indicator on Unaired Episodes" default="true" enable="eq(-1,true)"/>
 	    <setting id="show_unknown" type="bool" label="     Show episodes with unknown air date" default="true" enable="eq(-2,false)"/>
 	</category>
+	<category label="User Interface">
+	    <setting id="show_trending" type="bool" label="Show Trending" default="true"/>
+	    <setting id="show_recommended" type="bool" label="Show Recommended" default="true"/>
+	    <setting id="show_collection" type="bool" label="Show Collection" default="true"/>
+	    <setting id="show_favorites" type="bool" label="Show Favorites" default="true"/>
+	    <setting id="show_subscriptions" type="bool" label="Show Subscriptions" default="true"/>
+	    <setting id="show_watchlist" type="bool" label="Show Watchlist" default="true"/>
+	    <setting id="show_my_lists" type="bool" label="Show My Lists" default="true"/>
+	    <setting id="show_other_lists" type="bool" label="Show Other Lists" default="true"/>
+	    <setting id="show_progress" type="bool" label="Show My Next Episodes" default="true"/>
+	    <setting id="show_my_cal" type="bool" label="Show My Calendar" default="true"/>
+	    <setting id="show_general_cal" type="bool" label="Show General Calendar" default="true"/>
+	    <setting id="show_premiere_cal" type="bool" label="Show Premiere Calendar" default="true"/>
+	    <setting id="show_friends" type="bool" label="Show Friends" default="true"/>
+	    <setting id="show_search" type="bool" label="Show Search" default="true"/>
+	</category>
 	<category label="Trakt.tv">
 		<setting id="username" type="text" label="Trakt Username" default=""/>
 		<setting id="password" type="text" label="Trakt Password" default="" option="hidden"/>
@@ -102,9 +118,9 @@
          <setting id="yify.tv-enable" type="bool" label="yify.tv Enabled" default="true" visible="true"/>
          <setting id="yify.tv-base_url" type="text" label="     Base Url" default="http://yify.tv" visible="eq(-1,true)"/>
          <setting id="yify.tv-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
-         <setting id="viooz.be-enable" type="bool" label="viooz.be Enabled" default="true" visible="true"/>
-         <setting id="viooz.be-base_url" type="text" label="     Base Url" default="http://viooz.be" visible="eq(-1,true)"/>
-         <setting id="viooz.be-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
+         <setting id="viooz.ac-enable" type="bool" label="viooz.ac Enabled" default="true" visible="true"/>
+         <setting id="viooz.ac-base_url" type="text" label="     Base Url" default="http://viooz.ac" visible="eq(-1,true)"/>
+         <setting id="viooz.ac-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
          <setting id="FilmStreaming.in-enable" type="bool" label="FilmStreaming.in Enabled" default="true" visible="true"/>
          <setting id="FilmStreaming.in-base_url" type="text" label="     Base Url" default="http://film-streaming.in" visible="eq(-1,true)"/>
          <setting id="FilmStreaming.in-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
@@ -153,6 +169,12 @@
          <setting id="WatchMovies-enable" type="bool" label="WatchMovies Enabled" default="true" visible="true"/>
          <setting id="WatchMovies-base_url" type="text" label="     Base Url" default="http://watchmovies.to" visible="eq(-1,true)"/>
          <setting id="WatchMovies-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
+         <setting id="LosMovies-enable" type="bool" label="LosMovies Enabled" default="true" visible="true"/>
+         <setting id="LosMovies-base_url" type="text" label="     Base Url" default="http://losmovies.tv" visible="eq(-1,true)"/>
+         <setting id="LosMovies-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
+         <setting id="Movie4K-enable" type="bool" label="Movie4K Enabled" default="true" visible="true"/>
+         <setting id="Movie4K-base_url" type="text" label="     Base Url" default="http://www.movie4k.to" visible="eq(-1,true)"/>
+         <setting id="Movie4K-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
     </category>
 
     <category label="Subtitles">

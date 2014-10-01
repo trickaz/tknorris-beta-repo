@@ -1,3 +1,13 @@
+[B]Version 0.0.21[/B]
+- Improve onlinemovies scraper
+- Add ability to turn off menu items
+- Added losmovies scraper
+- Added movie4k.to scraper
+- Fix watchseries.sx
+- Improvements to first_aired handling
+- Replace viooz.be scraper with viooz.ac scraper
+- Use new user agent as view47 blocked the old one
+
 [B]Version 0.0.20[/B]
 - Set first_aired and released to localtime in infolabels
 - Fix multi-process debug code left in
