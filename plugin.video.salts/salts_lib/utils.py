@@ -223,7 +223,7 @@ def filename_from_title(title, video_type, year=None):
     xbmc.makeLegalFilename(filename)
     return filename
 
-def filter_hosters(hosters):
+def filter_unknown_hosters(hosters):
     filtered_hosters=[]
     for host in hosters:
         for key, _ in SORT_FIELDS:
@@ -231,6 +231,19 @@ def filter_hosters(hosters):
                 break
         else:
             filtered_hosters.append(host)
+    return filtered_hosters
+
+def filter_exclusions(hosters):
+    exclusions = ADDON.get_setting('excl_list')
+    exclusions = exclusions.replace(' ', '')
+    exclusions = exclusions.lower()
+    if not exclusions: return hosters
+    filtered_hosters=[]
+    for hoster in hosters:
+        if hoster['host'].lower() in exclusions:
+            log_utils.log('Excluding %s (%s) from %s' % (hoster['url'], hoster['host'], hoster['class'].get_name()), xbmc.LOGDEBUG)
+            continue
+        filtered_hosters.append(hoster)
     return filtered_hosters
 
 def get_sort_key(item):
@@ -582,7 +595,7 @@ def calculate_success(name):
 def record_timeouts(fails):
     for key in fails:
         if fails[key]==True:
-            log_utils.log('Recording Timeout of %s' % (key))
+            log_utils.log('Recording Timeout of %s' % (key), xbmc.LOGWARNING)
             db_connection.increment_db_setting('%s_fail' % key)
 
 def do_disable_check():

@@ -67,7 +67,7 @@ class LosMovies_Scraper(scraper.Scraper):
                 for match in re.finditer('data-width="([^"]+)"[^>]+>([^<]+)', fragment, re.DOTALL):
                     width, url = match.groups()
                     host = urlparse.urlsplit(url).hostname.replace('embed.','')
-                    hoster = {'multi-part': False, 'host': host, 'class': self, 'quality': self.__set_quality(width), 'views': None, 'rating': None, 'url': url}
+                    hoster = {'multi-part': False, 'host': host, 'class': self, 'quality': self.__set_quality(width), 'views': None, 'rating': None, 'url': url, 'direct': False}
                     hosters.append(hoster)
         return hosters
 

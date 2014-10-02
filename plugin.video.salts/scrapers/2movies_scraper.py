@@ -64,15 +64,8 @@ class TwoMovies_Scraper(scraper.Scraper):
             pattern='class="playDiv3".*?href="([^"]+).*?>(.*?)</a>'
             for match in re.finditer(pattern, html, re.DOTALL | re.I):
                 url, host = match.groups()
-                source = {'multi-part': False}
-                source['url']=url.replace(self.base_url,'')
-                source['host']=host
-                source['class']=self
-                source['quality']=None
-                source['rating']=None
-                source['views']=None
+                source = {'multi-part': False, 'url': url.replace(self.base_url,''), 'host': host, 'class': self, 'quality': None, 'rating': None, 'views': None, 'direct': False}
                 sources.append(source)
-            
         return sources
 
     def get_url(self, video):

@@ -64,8 +64,7 @@ class IStreamHD_Scraper(scraper.Scraper):
             url = urlparse.urljoin(self.base_url, source_url)
             html = self._http_get(url, cache_limit=.5)
             
-            hoster={'multi-part': False}
-            hoster['class']=self
+            hoster={'multi-part': False, 'class': self, 'rating': None, 'host': 'vk.com', 'direct': False}
             # episodes seem to be consistently available in HD, but movies only in SD
             if video.video_type==VIDEO_TYPES.EPISODE:
                 hoster['quality']=QUALITIES.HD
@@ -76,8 +75,6 @@ class IStreamHD_Scraper(scraper.Scraper):
                 hoster['views']=match.group(1)
             else:
                 hoster['views']=None
-            hoster['rating']=None
-            hoster['host']='vk.com'
             hoster['url']=source_url.replace('/get/item.php', '/lib/get_embed.php')
             hosters.append(hoster)
         return hosters

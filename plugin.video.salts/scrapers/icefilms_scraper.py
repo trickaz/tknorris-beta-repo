@@ -95,18 +95,14 @@ class IceFilms_Scraper(scraper.Scraper):
                     pattern='onclick=\'go\((\d+)\)\'>([^<]+)(<span.*?)</a>'
                     for match in re.finditer(pattern, fragment):
                         link_id, label, host_fragment = match.groups()
-                        source = {'multi-part': False}
-                        source['host']=re.sub('(<[^>]+>|</span>)','',host_fragment)
-                        if source['host'].upper() in BROKEN_RESOLVERS:
+                        source = {'multi-part': False, 'quality': quality, 'class': self, 'label': label, 'rating': None, 'views': None, 'direct': False}
+                        host=re.sub('(<[^>]+>|</span>)','',host_fragment)
+                        source['host']=host.lower()
+                        if host.upper() in BROKEN_RESOLVERS:
                             continue
-
+                        
                         url = '/membersonly/components/com_iceplayer/video.phpAjaxResp.php?id=%s&s=999&iqs=&url=&m=-999&cap=&sec=%s&t=%s' % (link_id, secret, t)
                         source['url']=url
-                        source['quality']=quality
-                        source['class']=self
-                        source['label']=label
-                        source['rating']=None
-                        source['views']=None
                         sources.append(source)
             except Exception as e:
                 log_utils.log('Failure (%s) during icefilms get sources: |%s|' % (str(e), video))

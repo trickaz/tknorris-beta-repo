@@ -69,7 +69,7 @@ class MerDB_Scraper(scraper.Scraper):
                 for i, source in enumerate(re.finditer(item_pattern, container.group(1), re.DOTALL)):
                     qual, url, host, parts, views = source.groups()
              
-                    item = {'host': host.decode('base-64'), 'url': url.decode('base-64')}
+                    item = {'host': host.decode('base-64'), 'url': url.decode('base-64'), 'class': self, 'direct': False}
                     item['verified'] = source.group(0).find('star.gif') > -1
                     item['quality'] = QUALITY_MAP.get(qual.upper())
                     item['views'] = int(views)
@@ -86,7 +86,6 @@ class MerDB_Scraper(scraper.Scraper):
                         item['parts'] = [part[0].decode('base-64') for part in other_parts]
                     else:
                         item['multi-part'] = False
-                    item['class']=self
                     hosters.append(item)
             
             if max_views>0:

@@ -82,10 +82,7 @@ class Alluc_Scraper(scraper.Scraper):
                     for match2 in re.finditer('class="openlink(?: newlink)?"\s+style="[^"]+"\s+href="([^"]+).*?Hits:\s+([.\d]+).*?name="score0"\s+value="(\d+)', group, re.DOTALL):
                         url, views, rating = match2.groups()
                         views=views.replace('.','')
-                        hoster = {'multi-part': False, 'host': host.strip(), 'class': self, 'quality': quality}
-                        hoster['url']='/'+url
-                        hoster['views']=int(views)
-                        hoster['rating']=rating
+                        hoster = {'multi-part': False, 'host': host.strip(), 'class': self, 'quality': quality, 'url': '/' + url, 'views': int(views), 'rating': rating, 'direct': False}
                         hosters.append(hoster)
 
         return hosters

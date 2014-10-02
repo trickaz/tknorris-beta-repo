@@ -105,7 +105,8 @@ class Scraper(object):
             * url: the url that is a link to a hoster, or a link to a page that this scraper can resolve to a link to a hoster
             * quality: one of the QUALITIES values, or None if unknown; users can sort sources by quality
             * views: count of the views from the site for this source or None is unknown; Users can sort sources by views
-            * rating: a value between 0 and 100; 0 being worst, 100 the best, or None if unknown. Users can sort sources by rating. 
+            * rating: a value between 0 and 100; 0 being worst, 100 the best, or None if unknown. Users can sort sources by rating.
+            * direct: True if url is a direct link to a media file; False if not. If not present; assumption is direct 
             * other keys are allowed as needed if they would be useful (e.g. for format_source_label)
         
         video is an object of type ScraperVideo:

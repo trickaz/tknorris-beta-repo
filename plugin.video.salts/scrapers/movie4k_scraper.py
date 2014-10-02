@@ -70,7 +70,7 @@ class Movie4K_Scraper(scraper.Scraper):
                 else:
                     smiley = None
                     
-                hoster = {'multi-part': False, 'host': host, 'class': self, 'quality': QUALITY_MAP[smiley], 'views': None, 'rating': None, 'url': url}
+                hoster = {'multi-part': False, 'host': host.lower(), 'class': self, 'quality': QUALITY_MAP[smiley], 'views': None, 'rating': None, 'url': url, 'direct': False}
                 hosters.append(hoster)
         return hosters
 

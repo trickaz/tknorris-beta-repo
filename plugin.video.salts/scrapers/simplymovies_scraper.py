@@ -47,7 +47,7 @@ class SimplyMovies_Scraper(scraper.Scraper):
         return link
     
     def format_source_label(self, item):
-        label='[%s] %s (%s views) (%s/100) ' % (item['quality'], item['host'], item['views'], item['rating'])
+        label='[%s] %s (%s/100) ' % (item['quality'], item['host'], item['rating'])
         return label
     
     def get_sources(self, video):
@@ -59,7 +59,7 @@ class SimplyMovies_Scraper(scraper.Scraper):
             pattern='class="videoPlayerIframe"\s+src="([^"]+)'
             match = re.search(pattern, html)
             if match:
-                hoster={'multi-part': False, 'host': 'vk.com', 'url': match.group(1), 'class': self, 'rating': None, 'views': None}
+                hoster={'multi-part': False, 'host': 'vk.com', 'url': match.group(1), 'class': self, 'rating': None, 'views': None, 'direct': False}
                 # episodes seem to be consistently available in HD, but movies only in SD
                 if video.video_type==VIDEO_TYPES.EPISODE:
                     hoster['quality']=QUALITIES.HD
@@ -86,7 +86,7 @@ class SimplyMovies_Scraper(scraper.Scraper):
         for match in re.finditer(pattern, html, re.DOTALL):
             url, match_title, match_year = match.groups('')
             match_title=match_title.strip()
-            if norm_title == self._normalize_title(match_title) and (match_year == '0001' or not year or not match_year or year == match_year):
+            if norm_title in self._normalize_title(match_title) and (match_year == '0001' or not year or not match_year or year == match_year):
                 url = '/'+url if not url.startswith('/') else url
                 result = {'url': url, 'title': match_title, 'year': match_year}
                 results.append(result)

@@ -58,7 +58,7 @@ class Filmikz_Scraper(scraper.Scraper):
             pattern='popUp\(\'/watch\.php\?q=([^\']+)'
             for match in re.finditer(pattern, html, re.DOTALL):
                 url = match.group(1)
-                hoster = {'multi-part': False, 'url': url.decode('base-64'), 'class': self, 'quality': None, 'views': None, 'rating': None}
+                hoster = {'multi-part': False, 'url': url.decode('base-64'), 'class': self, 'quality': QUALITIES.MEDIUM, 'views': None, 'rating': None, 'direct': False}
                 hoster['host']=urlparse.urlsplit(hoster['url']).hostname
                 hosters.append(hoster)
         return hosters
@@ -84,8 +84,9 @@ class Filmikz_Scraper(scraper.Scraper):
             match = re.search('window\.location\s+=\s+"([^"]+)', html)
             if match:
                 url = match.group(1)
-                result={'url': url.replace(self.base_url, ''), 'title': title, 'year': year}
-                results.append(result)
+                if url != 'movies.php':
+                    result={'url': url.replace(self.base_url, ''), 'title': title, 'year': year}
+                    results.append(result)
         return results
 
     def _http_get(self, url, cache_limit=8):

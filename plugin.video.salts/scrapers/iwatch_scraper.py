@@ -27,7 +27,7 @@ from salts_lib import log_utils
 from salts_lib.constants import VIDEO_TYPES
 from salts_lib.constants import QUALITIES
 
-QUALITY_MAP = {'HD': QUALITIES.HD, 'HDTV': QUALITIES.HIGH, 'DVD': QUALITIES.HIGH, '3D': QUALITIES.HIGH, 'CAM': QUALITIES.LOW}
+QUALITY_MAP = {'HD': QUALITIES.HIGH, 'HDTV': QUALITIES.HIGH, 'DVD': QUALITIES.HIGH, '3D': QUALITIES.HIGH, 'CAM': QUALITIES.LOW}
 BASE_URL = 'http://www.iwatchonline.to'
 
 class IWatchOnline_Scraper(scraper.Scraper):
@@ -75,7 +75,7 @@ class IWatchOnline_Scraper(scraper.Scraper):
                     quality=quality.upper()
                     if age>max_age: max_age=age
                     if age<min_age: min_age=age
-                    hoster = {'multi-part': False, 'class': self, 'url': url.replace(self.base_url,''), 'host': host, 'age': age, 'views': None, 'rating': None}
+                    hoster = {'multi-part': False, 'class': self, 'url': url.replace(self.base_url,''), 'host': host.lower(), 'age': age, 'views': None, 'rating': None, 'direct': False}
                     hoster['quality']=QUALITY_MAP[quality] if quality in QUALITY_MAP else None
                     hosters.append(hoster)
                 

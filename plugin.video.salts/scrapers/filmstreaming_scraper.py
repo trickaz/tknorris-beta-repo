@@ -54,16 +54,16 @@ class FilmStreaming_Scraper(scraper.Scraper):
         if source_url:
             url = urlparse.urljoin(self.base_url,source_url)
             html = self._http_get(url, cache_limit=.5)
-            
-            hoster = {'multi-part': False, 'host': 'videomega.tv', 'class': self, 'quality': QUALITIES.HIGH, 'views': None, 'rating': None}
-            match = re.search('iframe.*?src=(?:"|\')([^\'"]+)', html)
-            if not match:
-                return []
-            hoster['url']=match.group(1)
+
             match=re.search('class="sirala">(\d+) views', html, re.DOTALL)
             if match:
-                hoster['views'] = match.group(1)
-            hosters.append(hoster)
+                views = match.group(1)
+            
+            for match in re.finditer('iframe.*?src=(?:"|\')([^\'"]+)', html):
+                url =match.group(1)
+                if 'videomega' in url:
+                    hoster = {'multi-part': False, 'url': url, 'host': 'videomega.tv', 'class': self, 'quality': QUALITIES.HIGH, 'views': views, 'rating': None, 'direct': False}
+                    hosters.append(hoster)
         return hosters
 
     def get_url(self, video):

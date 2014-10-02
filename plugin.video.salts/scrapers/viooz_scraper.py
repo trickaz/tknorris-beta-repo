@@ -68,12 +68,14 @@ class VioozAc_Scraper(scraper.Scraper):
                 match = re.search('<iframe.*?src="([^"]+)', link_fragment)
                 if match:
                     stream_url = match.group(1)
+                    direct=False
                 else:
                     match = re.search('proxy\.link=([^"&]+)', link_fragment)
                     if match:
                         proxy_link = match.group(1)
                         proxy_link = proxy_link.split('*', 1)[-1]
                         stream_url = GKDecrypter.decrypter(198,128).decrypt(proxy_link, base64.urlsafe_b64decode('YVhWN09hU0M4MDRWYXlUQ0lPYmE='),'ECB').split('\0')[0]
+                        direct=True
                     else:
                         continue
                 
@@ -81,7 +83,7 @@ class VioozAc_Scraper(scraper.Scraper):
                 if 'hqq.tv' in stream_url:
                     continue
                 
-                hoster = {'multi-part': False, 'url': stream_url, 'class': self, 'quality': quality, 'host': urlparse.urlsplit(stream_url).hostname, 'rating': None, 'views': None}
+                hoster = {'multi-part': False, 'url': stream_url, 'class': self, 'quality': quality, 'host': urlparse.urlsplit(stream_url).hostname, 'rating': None, 'views': None, 'direct': direct}
                 hosters.append(hoster)
         print hosters
         return hosters

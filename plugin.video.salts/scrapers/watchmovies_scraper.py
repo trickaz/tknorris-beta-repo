@@ -69,7 +69,7 @@ class WatchMovies_Scraper(scraper.Scraper):
             for match in re.finditer(pattern, html, re.DOTALL):
                 video_id, hoster_num, host, views = match.groups()
                 hoster_url = '%s/ajax/mirror/id=%s&hoster=%s' % (self.base_url, video_id, hoster_num)
-                hoster = {'multi-part': False, 'host': host, 'class': self, 'quality': None, 'views': views, 'rating': None, 'url': hoster_url}
+                hoster = {'multi-part': False, 'host': host, 'class': self, 'quality': None, 'views': views, 'rating': None, 'url': hoster_url, 'direct': False}
                 hosters.append(hoster)
 
         return hosters

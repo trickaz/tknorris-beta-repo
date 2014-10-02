@@ -70,7 +70,7 @@ class PW_Scraper(scraper.Scraper):
                 for i, source in enumerate(re.finditer(item_pattern, container.group(1), re.DOTALL)):
                     qual, url, host, parts, views = source.groups()
              
-                    item = {'host': host.decode('base-64'), 'url': url.decode('base-64')}
+                    item = {'host': host.decode('base-64').lower(), 'url': url.decode('base-64')}
                     item['verified'] = source.group(0).find('star.gif') > -1
                     item['quality'] = QUALITY_MAP.get(qual.upper())
                     item['views'] = int(views)
@@ -88,6 +88,7 @@ class PW_Scraper(scraper.Scraper):
                     else:
                         item['multi-part'] = False
                     item['class']=self
+                    item['direct']=False
                     hosters.append(item)
             
             if max_views>0:

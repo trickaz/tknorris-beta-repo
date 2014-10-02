@@ -70,7 +70,7 @@ class OroroTV_Scraper(scraper.Scraper):
                 quality = QUALITIES.HIGH
                     
             for match in re.finditer("source src='([^']+)'\s+type='video/([^']+)", html):
-                hoster = {'multi-part': False, 'host': 'ororo.tv', 'class': self, 'url': match.group(1), 'quality': quality, 'views': None, 'rating': None, 'format': match.group(2)}
+                hoster = {'multi-part': False, 'host': 'ororo.tv', 'class': self, 'url': match.group(1), 'quality': quality, 'views': None, 'rating': None, 'format': match.group(2), 'direct': True}
                 hosters.append(hoster)
         return hosters
 

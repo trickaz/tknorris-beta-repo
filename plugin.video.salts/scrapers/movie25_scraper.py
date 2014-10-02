@@ -70,13 +70,7 @@ class Movie25_Scraper(scraper.Scraper):
                 host, url, up, down = match.groups()
                 up=int(up)
                 down=int(down)
-                hoster = {'multi-part': False}
-                hoster['host']=host
-                hoster['class']=self
-                hoster['url']=url
-                hoster['quality']=quality
-                hoster['up']=up
-                hoster['down']=down
+                hoster = {'multi-part': False, 'host': host, 'class': self, 'url': url, 'quality': quality, 'up': up, 'down': down, 'direct': False}
                 rating=up*100/(up+down) if (up>0 or down>0) else None
                 hoster['rating']=rating
                 hoster['views']=up+down

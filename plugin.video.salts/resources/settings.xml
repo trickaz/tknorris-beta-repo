@@ -29,7 +29,7 @@
 		<setting id="username" type="text" label="Trakt Username" default=""/>
 		<setting id="password" type="text" label="Trakt Password" default="" option="hidden"/>
 	    <setting id="use_https" type="bool" label="Use HTTPS" default="false"/>
-		<setting id="trakt_timeout" type="slider" label="Trakt Timeout (seconds) (0=No Limit)" default="5" range="0,120" option="int"/>
+		<setting id="trakt_timeout" type="slider" label="Trakt Timeout (seconds) (0=No Limit)" default="30" range="0,120" option="int"/>
 		<setting id="cache_watched" type="bool" label="Cache watched status" default="true"/>
 		<setting id="last_hash" type="text" default="" visible="false"/>
 	    <setting id="TV_sub_slug" type="text" visible="false"/>
@@ -56,8 +56,10 @@
 	<category label="Source Management">
         <setting id="auto-play" type="bool" label="Auto-Play Sources" default="false"/>
 		<setting id="source-win" type="labelenum" label="     Source Selection Method" values="Directory|Dialog" default="Dialog"/>		
-		<setting id="source_timeout" type="slider" label="Scraper Timeout (seconds) (0=No Limit)" default="5" range="0,120" option="int"/>
-		<setting id="source_results" type="number" label="Maximum Source Results (0=No Limit)" default="0"/>
+		<setting id="source_timeout" type="slider" label="Scraper Timeout (seconds) (0=No Limit)" default="10" range="0,120" option="int"/>
+		<setting id="source_results" type="number" label="Maximum Sources Results (0=No Limit)" default="0"/>
+		<setting id="filter_unusable" type="number" label="Filter Top Unsuable Sources (0=None)" default="50"/>
+		<setting id="excl_list" type="text" label="Source Exclusion List" default=""/>
 		<setting id="title-fallback" type="bool" label="Match episode title when season & episode fails" default="true"/>
 	    <setting id="last_check" type="number" default="0" visible="false"/>
 		<setting id="auto-disable" type="enum" label="Automatically disable slow scrapers" values="Off|Prompt|On" default="1"/>

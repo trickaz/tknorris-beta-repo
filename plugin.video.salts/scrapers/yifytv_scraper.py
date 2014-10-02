@@ -95,7 +95,7 @@ class YIFY_Scraper(scraper.Scraper):
             match = re.search('showPkPlayer\("([^"]+)', html)
             if match:
                 video_id = match.group(1)                
-                hoster = {'multi-part': False, 'host': 'yify.tv', 'class': self, 'quality': QUALITIES.HD, 'views': None, 'rating': None, 'url': video_id}
+                hoster = {'multi-part': False, 'host': 'yify.tv', 'class': self, 'quality': QUALITIES.HD, 'views': None, 'rating': None, 'url': video_id, 'direct': True}
                 match = re.search('class="votes">(\d+)</strong>', html)
                 if match:
                     hoster['views']=int(match.group(1))

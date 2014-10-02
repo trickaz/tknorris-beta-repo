@@ -70,7 +70,7 @@ class Vidics_Scraper(scraper.Scraper):
                 
                 for match in re.finditer('class="movie_link.*?href="([^"]+)[^>]+>([^<]+)', fragment, re.DOTALL):
                     media_url, host = match.groups()
-                    hosters.append({'multi-part': False, 'url': media_url, 'class': self, 'quality': None, 'host': host, 'rating': None, 'views': None})
+                    hosters.append({'multi-part': False, 'url': media_url, 'class': self, 'quality': None, 'host': host, 'rating': None, 'views': None, 'direct': False})
                     
         return hosters
 

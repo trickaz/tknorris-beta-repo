@@ -1,3 +1,11 @@
+[B]Version 0.0.23[/B]
+- Add ability to filter first X results that don't have a usable resolver
+- Minor scraper improvements/fixes to most scrapers
+- Add a hoster exclusion list
+- Add timeout notification for Set Related Url and Get Sources
+- Add context menu to Set Related Url on TV Show from Next Episodes & Calendar Views
+- Add context menu to Browse Seasons from Next Episodes & Calendar Views
+
 [B]Version 0.0.22[/B]
 - Fix total_seconds not existing in <2.7 python
 

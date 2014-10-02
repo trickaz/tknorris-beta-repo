@@ -65,7 +65,7 @@ class Shush_Scraper(scraper.Scraper):
                 if proxy_link.startswith('http'):
                     swf_link = swf_link.replace('proxy.swf', 'pluginslist.xml')
                     html = self._http_get(swf_link, cache_limit=0)
-                    match = re.search('url="(http.*?)p.swf', html)
+                    match = re.search('url="(http.*?)b.swf', html)
                     if match:
                         player_url = match.group(1)
                         url = player_url + 'plugins_player.php'
@@ -78,12 +78,12 @@ class Shush_Scraper(scraper.Scraper):
 
                         if sources:
                             for source in sources:
-                                hoster = {'multi-part': False, 'url': source, 'class': self, 'quality': sources[source], 'host': 'shush.se', 'rating': None, 'views': None}
+                                hoster = {'multi-part': False, 'url': source, 'class': self, 'quality': sources[source], 'host': 'shush.se', 'rating': None, 'views': None, 'direct': True}
                                 hosters.append(hoster)
                 else:
                     proxy_link = proxy_link.split('*', 1)[-1]
                     stream_url = GKDecrypter.decrypter(198,128).decrypt(proxy_link, base64.urlsafe_b64decode('djRBdVhhalplRm83akFNZ1VOWkI='),'ECB').split('\0')[0]
-                    hoster = {'multi-part': False, 'url': stream_url, 'class': self, 'quality': QUALITIES.HIGH, 'host': urlparse.urlsplit(stream_url).hostname, 'rating': None, 'views': None}
+                    hoster = {'multi-part': False, 'url': stream_url, 'class': self, 'quality': QUALITIES.HIGH, 'host': urlparse.urlsplit(stream_url).hostname, 'rating': None, 'views': None, 'direct': True}
                     hosters.append(hoster)
          
         return hosters

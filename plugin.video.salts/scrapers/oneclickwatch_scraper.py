@@ -71,7 +71,7 @@ class OneClickWatch_Scraper(scraper.Scraper):
             pattern = '^<a\s+href="([^"]+)"\s+rel="nofollow"'
             for match in re.finditer(pattern, html, re.M):
                 url=match.group(1)
-                hoster={'multi-part': False, 'class': self, 'views': None, 'url': url, 'rating': None, 'quality': quality}
+                hoster={'multi-part': False, 'class': self, 'views': None, 'url': url, 'rating': None, 'quality': quality, 'direct': False}
                 hoster['host']=urlparse.urlsplit(url).hostname
                 hosters.append(hoster)
 

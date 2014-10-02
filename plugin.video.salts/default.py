@@ -384,7 +384,12 @@ def show_progress():
                 show=item['show']
                 fanart=item['show']['images']['fanart']
                 date=utils.make_day(time.strftime('%Y-%m-%d', time.localtime(first_aired_utc)))
-                liz, liz_url = make_episode_item(show, item['next_episode'], fanart)
+                
+                menu_items=[]
+                queries = {'mode': MODES.SEASONS, 'slug': trakt_api.get_slug(show['url']), 'fanart': fanart}
+                menu_items.append(('Browse Seasons', 'Container.Update(%s)' % (_SALTS.build_plugin_url(queries))), )
+                
+                liz, liz_url = make_episode_item(show, item['next_episode'], fanart, menu_items=menu_items)
                 label=liz.getLabel()
                 label = '[[COLOR deeppink]%s[/COLOR]] %s - %s' % (date, show['title'], label.decode('utf-8', 'replace'))
                 liz.setLabel(label) 
@@ -545,22 +550,36 @@ def get_sources(mode, video_type, title, year, slug, season='', episode='', ep_t
         else:
             log_utils.log('All source results received')
         
+    total = len(workers)
+    timeouts = len(fails)
     workers=utils.reap_workers(workers)
     try:
+        timeout_msg = 'Scraper Timeouts: %s/%s' % (timeouts, total) if timeouts else ''
         if not hosters:
             log_utils.log('No Sources found for: |%s|' % (video))
-            builtin = 'XBMC.Notification(%s,No Sources Found, 5000, %s)'
-            xbmc.executebuiltin(builtin % (_SALTS.get_name(), ICON_PATH))
+            msg = ' (%s)' % timeout_msg if timeout_msg else ''
+            builtin = 'XBMC.Notification(%s,No Sources Found%s, 5000, %s)'
+            xbmc.executebuiltin(builtin % (_SALTS.get_name(), msg, ICON_PATH))
             return False
+        
+        if timeout_msg:
+            builtin = 'XBMC.Notification(%s,%s, 5000, %s)'
+            xbmc.executebuiltin(builtin % (_SALTS.get_name(), timeout_msg, ICON_PATH))
+            
+        hosters = utils.filter_exclusions(hosters)
         
         if _SALTS.get_setting('enable_sort')=='true':
             if _SALTS.get_setting('filter-unknown')=='true':
-                hosters = utils.filter_hosters(hosters)
-            SORT_KEYS['source'] = utils.make_source_sort_key()
-            hosters.sort(key = utils.get_sort_key)
-            
+                hosters = utils.filter_unknown_hosters(hosters)
+        SORT_KEYS['source'] = utils.make_source_sort_key()
+        hosters.sort(key = utils.get_sort_key)
+
         global urlresolver
         import urlresolver
+        
+        hosters = filter_unusable_hosters(hosters)
+
+        
         if mode!=MODES.SELECT_SOURCE and _SALTS.get_setting('auto-play')=='true':
             auto_play_sources(hosters, video_type, slug, season, episode)
         else:
@@ -571,6 +590,18 @@ def get_sources(mode, video_type, title, year, slug, season='', episode='', ep_t
                 pick_source_dir(hosters, video_type, slug, season, episode)
     finally:
         utils.reap_workers(workers, None)
+
+def filter_unusable_hosters(hosters):
+    filtered_hosters=[]
+    max = int(_SALTS.get_setting('filter_unusable'))
+    for i, hoster in enumerate(hosters):
+        if i<max and 'direct' in hoster and hoster['direct']==False:
+            hmf = urlresolver.HostedMediaFile(host=hoster['host'], media_id='dummy') # use dummy media_id to force host validation
+            if not hmf:
+                log_utils.log('Unusable source %s (%s) from %s' % (hoster['url'], hoster['host'], hoster['class'].get_name()), xbmc.LOGDEBUG)
+                continue
+        filtered_hosters.append(hoster)
+    return filtered_hosters
     
 @url_dispatcher.register(MODES.RESOLVE_SOURCE, ['class_url', 'video_type', 'slug', 'class_name'], ['season', 'episode'])
 def resolve_source(class_url, video_type, slug, class_name, season='', episode=''):
@@ -669,18 +700,12 @@ def auto_play_sources(hosters, video_type, slug, season, episode):
         if play_source(hoster_url, video_type, slug, season, episode):
             return True
 
-def pick_source_dialog(hosters, filtered=False):
+def pick_source_dialog(hosters):
     for item in hosters:
         # TODO: Skip multiple sources for now
         if item['multi-part']:
             continue
 
-        if filtered:
-            hosted_media = urlresolver.HostedMediaFile(host=item['host'], media_id='dummy') # use dummy media_id to force host validation
-            if not hosted_media:
-                log_utils.log('Skipping unresolvable source: %s (%s)' % (item['url'], item['host']))
-                continue
-        
         label = item['class'].format_source_label(item)
         label = '[%s] %s' % (item['class'].get_name(),label)
         item['label']=label
@@ -696,18 +721,12 @@ def pick_source_dialog(hosters, filtered=False):
         except Exception as e:
             log_utils.log('Error (%s) while trying to resolve %s' % (str(e), hosters[index]['url']), xbmc.LOGERROR)
     
-def pick_source_dir(hosters, video_type, slug, season='', episode='', filtered=False):
+def pick_source_dir(hosters, video_type, slug, season='', episode=''):
     for item in hosters:
         # TODO: Skip multiple sources for now
         if item['multi-part']:
             continue
 
-        if filtered:
-            hosted_media = urlresolver.HostedMediaFile(host=item['host'], media_id='dummy') # use dummy media_id to force host validation
-            if not hosted_media:
-                log_utils.log('Skipping unresolvable source: %s (%s)' % (item['url'], item['host']))
-                continue
-        
         label = item['class'].format_source_label(item)
         label = '[%s] %s' % (item['class'].get_name(),label)
         item['label']=label
@@ -772,6 +791,16 @@ def set_related_url(mode, video_type, title, year, slug, season='', episode='', 
                 break
         else:
             log_utils.log('All source results received')
+
+    total = len(workers)
+    timeouts = len(fails)
+    timeout_msg = 'Scraper Timeouts: %s/%s' % (timeouts, total) if timeouts else ''
+    if timeout_msg:
+        builtin = 'XBMC.Notification(%s,%s, 5000, %s)'
+        xbmc.executebuiltin(builtin % (_SALTS.get_name(), timeout_msg, ICON_PATH))
+        for related in related_list:
+            if related['name'] in fails:
+                related['label']='[COLOR darkred]%s[/COLOR]' % (related['label'])
 
     workers=utils.reap_workers(workers)
     try:
@@ -1204,7 +1233,12 @@ def make_dir_from_cal(mode, start_date, days):
             show=episode_elem['show']
             episode=episode_elem['episode']
             fanart=show['images']['fanart']
-            liz, liz_url =make_episode_item(show, episode, fanart, show_subs=False)
+
+            menu_items=[]
+            queries = {'mode': MODES.SEASONS, 'slug': trakt_api.get_slug(show['url']), 'fanart': fanart}
+            menu_items.append(('Browse Seasons', 'Container.Update(%s)' % (_SALTS.build_plugin_url(queries))), )
+
+            liz, liz_url =make_episode_item(show, episode, fanart, show_subs=False, menu_items=menu_items)
             label=liz.getLabel()
             label = '[[COLOR deeppink]%s[/COLOR]] %s - %s' % (date, show['title'], label.decode('utf-8', 'replace'))
             if episode['season']==1 and episode['number']==1:
@@ -1218,9 +1252,10 @@ def make_dir_from_cal(mode, start_date, days):
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), liz_url, liz, isFolder=True)    
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
-def make_episode_item(show, episode, fanart, show_subs=True):
+def make_episode_item(show, episode, fanart, show_subs=True, menu_items=None):
     #log_utils.log('Make Episode: Show: %s, Episode: %s, Fanart: %s, Show Subs: %s' % (show, episode, fanart, show_subs), xbmc.LOGDEBUG)
     log_utils.log('Make Episode: Episode: %s' % (episode), xbmc.LOGDEBUG)
+    if menu_items is None: menu_items = []
     folder = _SALTS.get_setting('source-win')=='Directory' and _SALTS.get_setting('auto-play')=='false'
     show['title']=re.sub(' \(\d{4}\)$','',show['title'])
     if 'episode' in episode: episode_num=episode['episode']
@@ -1258,7 +1293,6 @@ def make_episode_item(show, episode, fanart, show_subs=True):
                'ep_title': episode['title'], 'slug': trakt_api.get_slug(show['url'])}
     liz_url = _SALTS.build_plugin_url(queries)
     
-    menu_items=[]
     if _SALTS.get_setting('auto-play')=='true':
         queries = {'mode': MODES.SELECT_SOURCE, 'video_type': VIDEO_TYPES.EPISODE, 'title': show['title'], 'year': show['year'], 'season': episode['season'], 'episode': episode_num, 
                    'ep_title': episode['title'], 'slug': trakt_api.get_slug(show['url'])}
@@ -1266,10 +1300,12 @@ def make_episode_item(show, episode, fanart, show_subs=True):
             runstring = 'PlayMedia(%s)' % _SALTS.build_plugin_url(queries)
         else:
             runstring = 'Container.Update(%s)' % _SALTS.build_plugin_url(queries)
-        print 'RunString is: %s' % (runstring)
-        menu_items.append(('Select Source', runstring), )
+        menu_items.insert(0, ('Select Source', runstring), )
         
-    menu_items.append(('Show Information', 'XBMC.Action(Info)'), )
+    if menu_items and menu_items[0][0]=='Select Source':
+        menu_items.append(('Show Information', 'XBMC.Action(Info)'), )
+    else:
+        menu_items.insert(0, ('Show Information', 'XBMC.Action(Info)'), )
 
     show_id=utils.show_id(show)
     queries = {'mode': MODES.ADD_TO_COLL, 'section': SECTIONS.TV}
@@ -1297,6 +1333,8 @@ def make_episode_item(show, episode, fanart, show_subs=True):
         queries.update(show_id)
         menu_items.append((label, 'RunPlugin(%s)' % (_SALTS.build_plugin_url(queries))), )
 
+    queries = {'mode': MODES.SET_URL_SEARCH, 'video_type': VIDEO_TYPES.TVSHOW, 'title': show['title'], 'year': show['year'], 'slug': trakt_api.get_slug(show['url'])}
+    menu_items.append(('Set Related Show Url (Search)', 'RunPlugin(%s)' % (_SALTS.build_plugin_url(queries))), )
     queries = {'mode': MODES.SET_URL_MANUAL, 'video_type': VIDEO_TYPES.EPISODE, 'title': show['title'], 'year': show['year'], 'season': episode['season'], 
                'episode': episode_num, 'ep_title': episode['title'], 'slug': trakt_api.get_slug(show['url'])}
     menu_items.append(('Set Related Url (Manual)', 'RunPlugin(%s)' % (_SALTS.build_plugin_url(queries))), )

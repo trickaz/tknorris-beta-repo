@@ -69,7 +69,7 @@ class View47_Scraper(scraper.Scraper):
                     if media_url: hosters += self.__get_view47_sources(media_url)
                 else:
                     media_url = EPID_URL + '?' + urllib.urlencode({'epid': ep_id})
-                    hosters.append({'multi-part': False, 'url': media_url, 'class': self, 'quality': QUALITIES.HD, 'host': host, 'rating': None, 'views': None})
+                    hosters.append({'multi-part': False, 'url': media_url, 'class': self, 'quality': QUALITIES.HD, 'host': host, 'rating': None, 'views': None, 'direct': False})
                 
         return hosters
 
@@ -98,7 +98,7 @@ class View47_Scraper(scraper.Scraper):
                     if link['href']==media_url:
                         for video in item['media']['content']:
                             if video['type'].startswith('video/'):
-                                hoster = {'multi-part': False, 'url': video['url'], 'class': self, 'quality': self.__set_quality(video['width']), 'host': 'View47', 'rating': None, 'views': None}
+                                hoster = {'multi-part': False, 'url': video['url'], 'class': self, 'quality': self.__set_quality(video['width']), 'host': 'View47', 'rating': None, 'views': None, 'direct': True}
                                 hosters.append(hoster)
         return hosters
         

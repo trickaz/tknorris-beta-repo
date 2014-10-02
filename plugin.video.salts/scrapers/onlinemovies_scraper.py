@@ -63,15 +63,16 @@ class OnlineMovies_Scraper(scraper.Scraper):
             match = re.search("class=\"video-embed\">\s+<iframe.*?src='([^']+)", html)
             if match:
                 url=match.group(1)                
-                hoster = {'multi-part': False, 'host': 'videomega.tv', 'class': self, 'quality': None, 'views': None, 'rating': None, 'url': url}
+                hoster = {'multi-part': False, 'host': 'videomega.tv', 'class': self, 'quality': None, 'views': None, 'rating': None, 'url': url, 'direct': False}
                 match = re.search('class="views-infos">(\d+).*?class="rating">(\d+)%', html, re.DOTALL)
                 if match:
                     hoster['views']=int(match.group(1))
                     hoster['rating']=match.group(2)
                 
-                match = re.search('Quality.*:(.*)<br', html)
+                match = re.search('Quality.*?:(.*)<', html)
                 if match:
                     q_str = match.group(1).upper()
+                    q_str = q_str.replace('STRONG', '')
                     for key in QUALITY_MAP:
                         if any(q in q_str for q in QUALITY_MAP[key]):
                             hoster['quality']=key
