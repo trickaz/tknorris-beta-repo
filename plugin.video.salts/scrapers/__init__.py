@@ -35,15 +35,24 @@ def update_settings():
     except:
         raise
     
-    match = re.search('(<category label="Scrapers">.*?</category>)', xml, re.DOTALL | re.I)
+    match = re.search('(<category label="Scrapers">.*?</category>.*?)<category', xml, re.DOTALL | re.I)
     if match:
         old_settings=match.group(1)
         
         new_settings = '<category label="Scrapers">\n'
         classes=scraper.Scraper.__class__.__subclasses__(scraper.Scraper)
+        hidden_settings=''
+        visible_settings=''
         for cls in classes:
-            for setting in cls.get_settings(): new_settings += setting + '\n'
-        new_settings += '    </category>'
+            for setting in cls.get_settings():
+                if 'visible="false"' in setting:
+                    hidden_settings += setting + '\n'
+                else:
+                    visible_settings += setting + '\n'
+        new_settings += visible_settings
+        new_settings += '    </category>\n'
+        new_settings += hidden_settings
+        new_settings += '\n\t'
             
         if old_settings != new_settings:
             xml=xml.replace(old_settings, new_settings)

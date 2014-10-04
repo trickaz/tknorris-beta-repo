@@ -51,7 +51,7 @@ global urlresolver
 
 @url_dispatcher.register(MODES.MAIN)
 def main_menu():
-    db_connection.init_database()    
+    db_connection.init_database()
     if not VALID_ACCOUNT:
         remind_count = int(_SALTS.get_setting('remind_count'))
         remind_max=5
@@ -162,6 +162,12 @@ def force_refresh(refresh_mode, section=None, slug=None, username=None):
 @url_dispatcher.register(MODES.SCRAPERS)
 def scraper_settings():
     scrapers=utils.relevant_scrapers(None, True, True)
+    if _SALTS.get_setting('toggle_enable')=='true':
+        label='**Enable All Scrapers**'
+    else:
+        label='**Disable All Scrapers**'
+    _SALTS.add_directory({'mode': MODES.TOGGLE_ALL}, {'title': label}, img=utils.art('scraper.png'), fanart=utils.art('fanart.jpg'))
+    
     for i, cls in enumerate(scrapers):
         label = '%s (Provides: %s)' % (cls.get_name(), str(list(cls.provides())).replace("'", ""))
         label = '%s (Success: %s%%)' % (label, utils.calculate_success(cls.get_name()))
@@ -184,12 +190,44 @@ def scraper_settings():
             queries = {'mode': MODES.MOVE_SCRAPER, 'name': cls.get_name(), 'direction': DIRS.DOWN, 'other': scrapers[i+1].get_name()}
             menu_items.append(('Move Down', 'RunPlugin(%s)' % (_SALTS.build_plugin_url(queries))), )
 
+        queries = {'mode': MODES.MOVE_TO, 'name': cls.get_name()}
+        menu_items.append(('Move To...', 'RunPlugin(%s)' % (_SALTS.build_plugin_url(queries))), )
+
         queries = {'mode': MODES.TOGGLE_SCRAPER, 'name': cls.get_name()}
         menu_items.append((toggle_label, 'RunPlugin(%s)' % (_SALTS.build_plugin_url(queries))), )
         liz.addContextMenuItems(menu_items, replaceItems=True)
         
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), liz_url, liz, isFolder=False)
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
+
+@url_dispatcher.register(MODES.MOVE_TO, ['name'])
+def move_to(name):
+    dialog = xbmcgui.Dialog()
+    sort_key = utils.make_source_sort_key()
+    new_pos = dialog.numeric(0, 'Enter New Position (1 - %s)' % (len(sort_key)))
+    if new_pos:
+        new_pos = int(new_pos)
+        old_key = sort_key[name]
+        new_key=-new_pos+1
+        if (new_pos<=0 or new_pos>len(sort_key)) or old_key==new_key:
+            return
+        
+        for key in sort_key:
+            this_key = sort_key[key]
+            # moving scraper up
+            if new_key>old_key:
+                # move everything between the old and new down
+                if this_key>old_key and this_key<=new_key:
+                    sort_key[key] -= 1
+            # moving scraper down
+            else:
+                # move everything between the old and new up
+                if this_key>new_key and this_key<=new_key:
+                    sort_key[key] += 1    
+            
+        sort_key[name]=new_key
+    _SALTS.set_setting('source_sort_order', utils.make_source_sort_string(sort_key))
+    xbmc.executebuiltin("XBMC.Container.Refresh")
 
 @url_dispatcher.register(MODES.MOVE_SCRAPER, ['name', 'direction', 'other'])
 def move_scraper(name, direction, other):
@@ -201,6 +239,17 @@ def move_scraper(name, direction, other):
         sort_key[name] -= 1
         sort_key[other] += 1
     _SALTS.set_setting('source_sort_order', utils.make_source_sort_string(sort_key))
+    xbmc.executebuiltin("XBMC.Container.Refresh")
+
+@url_dispatcher.register(MODES.TOGGLE_ALL)
+def toggle_scrapers():
+    cur_toggle = _SALTS.get_setting('toggle_enable')
+    scrapers=utils.relevant_scrapers(None, True, True)
+    for scraper in scrapers:
+        _SALTS.set_setting('%s-enable' % (scraper.get_name()), cur_toggle)
+        
+    new_toggle = 'false' if cur_toggle=='true' else 'true'
+    _SALTS.set_setting('toggle_enable', new_toggle)
     xbmc.executebuiltin("XBMC.Container.Refresh")
 
 @url_dispatcher.register(MODES.TOGGLE_SCRAPER, ['name'])
@@ -371,12 +420,12 @@ def show_watchlist(section):
 @url_dispatcher.register(MODES.SHOW_COLLECTION, ['section'])
 def show_collection(section):
     items = trakt_api.get_collection(section)
-    make_dir_from_list(section, items)
+    make_dir_from_list(section, items, COLLECTION_SLUG)
     
 @url_dispatcher.register(MODES.SHOW_PROGRESS)
 def show_progress():
     sort_index =_SALTS.get_setting('sort_progress')
-    items = trakt_api.get_progress(SORT_MAP[int(sort_index)])
+    items = trakt_api.get_progress(sort=SORT_MAP[int(sort_index)])
     for item in items:
         if 'next_episode' in item and item['next_episode']:
             first_aired_utc = utils.fa_2_utc(item['next_episode']['first_aired'])
@@ -465,21 +514,16 @@ def search(section):
     
 @url_dispatcher.register(MODES.SEARCH_RESULTS, ['section', 'query'])
 def search_results(section, query):
-#     section_params=utils.get_section_params(section)
     results = trakt_api.search(section, query)
     make_dir_from_list(section, results)
-#     totalItems=len(results)
-#     for result in results:
-#         liz, liz_url = make_item(section_params, result)
-#         xbmcplugin.addDirectoryItem(int(sys.argv[1]), liz_url, liz, isFolder=section_params['folder'], totalItems=totalItems)
-#     xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
 @url_dispatcher.register(MODES.SEASONS, ['slug', 'fanart'])
 def browse_seasons(slug, fanart):
     seasons=trakt_api.get_seasons(slug)
+    season_watched=utils.make_season_watched(trakt_api.get_progress(title=slug, full=False))
     totalItems=len(seasons)
     for season in reversed(seasons):
-        liz=utils.make_season_item(season, fanart)
+        liz=utils.make_season_item(season, season_watched.get(season['season'], False), fanart)
         queries = {'mode': MODES.EPISODES, 'slug': slug, 'season': season['season'], 'fanart': fanart}
         liz_url = _SALTS.build_plugin_url(queries)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), liz_url, liz,isFolder=True,totalItems=totalItems)
@@ -520,7 +564,7 @@ def get_sources(mode, video_type, title, year, slug, season='', episode='', ep_t
                 break
         else:
             worker=utils.start_worker(q, utils.parallel_get_sources, [cls, video])
-            db_connection.increment_db_setting('%s_try' % (cls.get_name()))
+            utils.increment_setting('%s_try' % (cls.get_name()))
             worker_count+=1
             workers.append(worker)
             fails[cls.get_name()]=True
@@ -568,6 +612,8 @@ def get_sources(mode, video_type, title, year, slug, season='', episode='', ep_t
             
         hosters = utils.filter_exclusions(hosters)
         
+        hosters = utils.filter_quality(video_type, hosters)
+        
         if _SALTS.get_setting('enable_sort')=='true':
             if _SALTS.get_setting('filter-unknown')=='true':
                 hosters = utils.filter_unknown_hosters(hosters)
@@ -578,7 +624,6 @@ def get_sources(mode, video_type, title, year, slug, season='', episode='', ep_t
         import urlresolver
         
         hosters = filter_unusable_hosters(hosters)
-
         
         if mode!=MODES.SELECT_SOURCE and _SALTS.get_setting('auto-play')=='true':
             auto_play_sources(hosters, video_type, slug, season, episode)
@@ -762,7 +807,7 @@ def set_related_url(mode, video_type, title, year, slug, season='', episode='', 
             related_list.append(related)
         else:
             worker = utils.start_worker(q, utils.parallel_get_url, [cls, video])
-            db_connection.increment_db_setting('%s_try' % (cls.get_name()))
+            utils.increment_setting('%s_try' % (cls.get_name()))
             worker_count += 1
             workers.append(worker)
             related={'class': cls(max_timeout), 'name': cls.get_name(), 'label': '[%s]' % (cls.get_name()), 'url': ''}
@@ -911,13 +956,19 @@ def remove_many_from_list(section, items, slug):
         response=trakt_api.remove_from_list(slug, items)
     return response
     
-@url_dispatcher.register(MODES.ADD_TO_COLL, ['section', 'id_type', 'show_id'])
-def add_to_collection(section, id_type, show_id):
+@url_dispatcher.register(MODES.ADD_TO_COLL, ['mode', 'section', 'id_type', 'show_id'])
+@url_dispatcher.register(MODES.REM_FROM_COLL, ['mode', 'section', 'id_type', 'show_id'])
+def manage_collection(mode, section, id_type, show_id):
     item={id_type: show_id}
-    trakt_api.add_to_collection(section, item)
-    builtin = "XBMC.Notification(%s,Item Added to Collection, 2000, %s)" % (_SALTS.get_name(), ICON_PATH)
+    if mode == MODES.ADD_TO_COLL:
+        trakt_api.add_to_collection(section, item)
+        msg = 'Item Added to Collection'
+    else:
+        trakt_api.remove_from_collection(section, item)
+        msg = 'Item Removed from Collection'
+    builtin = "XBMC.Notification(%s,%s, 2000, %s)" % (_SALTS.get_name(), msg, ICON_PATH)
     xbmc.executebuiltin(builtin)
-    #xbmc.executebuiltin("XBMC.Container.Refresh")
+    xbmc.executebuiltin("XBMC.Container.Refresh")
 
 @url_dispatcher.register(MODES.ADD_TO_LIST, ['section', 'id_type', 'show_id'], ['slug'])
 def add_to_list(section, id_type, show_id, slug=None):
@@ -1192,10 +1243,17 @@ def make_dir_from_list(section, list_data, slug=None):
     
     for show in list_data:
         menu_items=[]
+        show_id=utils.show_id(show)
         if slug:
-            queries = {'mode': MODES.REM_FROM_LIST, 'slug': slug, 'section': section}
-            queries.update(utils.show_id(show))
-            menu_items.append(('Remove from List', 'RunPlugin(%s)' % (_SALTS.build_plugin_url(queries))), )
+            if slug==COLLECTION_SLUG:
+                queries = {'mode': MODES.REM_FROM_COLL, 'section': section}
+                queries.update(show_id)
+                menu_items.append((REM_COLL_LABEL, 'RunPlugin(%s)' % (_SALTS.build_plugin_url(queries))), )
+            else:
+                queries = {'mode': MODES.REM_FROM_LIST, 'slug': slug, 'section': section}
+                queries.update(show_id)
+                menu_items.append(('Remove from List', 'RunPlugin(%s)' % (_SALTS.build_plugin_url(queries))), )
+                
         sub_slug=_SALTS.get_setting('%s_sub_slug' % (section))
         if VALID_ACCOUNT and sub_slug and sub_slug != slug:
             queries = {'mode': MODES.ADD_TO_LIST, 'section': section_params['section'], 'slug': sub_slug}
@@ -1205,7 +1263,7 @@ def make_dir_from_list(section, list_data, slug=None):
         if 'imdb_id' in show: show['watched'] = watched.get(show['imdb_id'], False)
         elif 'tvdb_id' in show: show['watched'] = watched.get(show['tvdb_id'], False)
         elif 'tmdb_id' in show: show['watched'] = watched.get(show['tmdb_id'], False)
-        if not show['watched']: log_utils.log('Setting watched status on %s (%s): %s' % (show['title'], show['year'], show['watched']), xbmc.LOGDEBUG)
+        #if not show['watched']: log_utils.log('Setting watched status on %s (%s): %s' % (show['title'], show['year'], show['watched']), xbmc.LOGDEBUG)
             
         liz, liz_url =make_item(section_params, show, menu_items)
         
@@ -1307,11 +1365,18 @@ def make_episode_item(show, episode, fanart, show_subs=True, menu_items=None):
     else:
         menu_items.insert(0, ('Show Information', 'XBMC.Action(Info)'), )
 
+    if 'in_collection' in episode and episode['in_collection']:
+        collection_mode=MODES.REM_FROM_COLL
+        label = 'Remove Show from Collection'
+    else:
+        collection_mode=MODES.ADD_TO_COLL
+        label = 'Add Show to Collection'
+        
     show_id=utils.show_id(show)
-    queries = {'mode': MODES.ADD_TO_COLL, 'section': SECTIONS.TV}
+    queries = {'mode': collection_mode, 'section': SECTIONS.TV}
     queries.update(show_id)
-    menu_items.append(('Add Show to Collection', 'RunPlugin(%s)' % (_SALTS.build_plugin_url(queries))), )
-    
+    menu_items.append((label, 'RunPlugin(%s)' % (_SALTS.build_plugin_url(queries))), )
+
     queries = {'mode': MODES.ADD_TO_LIST, 'section': SECTIONS.TV}
     queries.update(show_id)
     menu_items.append(('Add Show to List', 'RunPlugin(%s)' % (_SALTS.build_plugin_url(queries))), )
@@ -1377,9 +1442,15 @@ def make_item(section_params, show, menu_items=None):
         
     if VALID_ACCOUNT:
         show_id=utils.show_id(show)
-        queries = {'mode': MODES.ADD_TO_COLL, 'section': section_params['section']}
-        queries.update(show_id)
-        menu_items.append(('Add to Collection', 'RunPlugin(%s)' % (_SALTS.build_plugin_url(queries))), )
+        if REM_COLL_LABEL not in (item[0] for item in menu_items):
+            if 'in_collection' in show and show['in_collection']:
+                queries = {'mode': MODES.REM_FROM_COLL, 'section': section_params['section']}
+                queries.update(show_id)
+                menu_items.append((REM_COLL_LABEL, 'RunPlugin(%s)' % (_SALTS.build_plugin_url(queries))), )
+            else:
+                queries = {'mode': MODES.ADD_TO_COLL, 'section': section_params['section']}
+                queries.update(show_id)
+                menu_items.append(('Add to Collection', 'RunPlugin(%s)' % (_SALTS.build_plugin_url(queries))), )
         
         queries = {'mode': MODES.ADD_TO_LIST, 'section': section_params['section']}
         queries.update(show_id)

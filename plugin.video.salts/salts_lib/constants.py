@@ -27,7 +27,7 @@ MODES=__enum(MAIN='main', BROWSE='browse', TRENDING='trending', RECOMMEND='recom
            MOVE_SCRAPER = 'scraper_move', FRIENDS_EPISODE='friends_episode', EDIT_TVSHOW_ID='edit_id', SELECT_SOURCE='select_source', SHOW_COLLECTION='show_collection',
            SHOW_PROGRESS='show_progress', PLAY_TRAILER='play_trailer', RENAME_LIST='rename_list', EXPORT_DB='export_db', IMPORT_DB='import_db', COPY_LIST='copy_list',
            REMOVE_LIST='remove_list', ADD_TO_COLL='add_to_collection', TOGGLE_WATCHED='toggle_watched', RATE='rate', FORCE_REFRESH='force_refresh', TOGGLE_TITLE='toggle_force',
-           RES_SETTINGS='resolver_settings', ADDON_SETTINGS='addon_settings')
+           RES_SETTINGS='resolver_settings', ADDON_SETTINGS='addon_settings', TOGGLE_ALL='toggle_all', MOVE_TO='move_to', REM_FROM_COLL='rem_from_collection')
 SECTIONS=__enum(TV='TV', MOVIES='Movies')
 VIDEO_TYPES = __enum(TVSHOW='TV Show', MOVIE='Movie', EPISODE='Episode', SEASON='Season')
 TRAKT_SECTIONS = {SECTIONS.TV: 'shows', SECTIONS.MOVIES: 'movies'}
@@ -37,6 +37,8 @@ QUALITIES = __enum(LOW='Low', MEDIUM='Medium', HIGH='High', HD='HD')
 DIRS = __enum(UP='up', DOWN='down')
 P_MODES = __enum(THREADS=0, PROCESSES=1, NONE=2)
 WATCHLIST_SLUG = 'watchlist_slug'
+COLLECTION_SLUG='collection_slug'
+REM_COLL_LABEL='Remove from Collection'
 USER_AGENT = ("Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:32.0) Gecko/20100101 Firefox/32.0")
 
 # sort keys need to be defined such that "best" have highest values
@@ -53,3 +55,17 @@ LONG_AGO='1970-01-01 23:59:00.000000'
 TEMP_ERRORS=[500, 502, 503, 504, 520, 521, 522, 524]
 SRT_SOURCE='addic7ed'
 DISABLE_SETTINGS= __enum(OFF='0', PROMPT='1', ON='2')
+
+BLOG_Q_MAP={}
+BLOG_Q_MAP[QUALITIES.LOW]=[' CAM ', ' TS ', ' R6 ']
+BLOG_Q_MAP[QUALITIES.MEDIUM] = []
+BLOG_Q_MAP[QUALITIES.HIGH]=['HDRIP', 'DVDRIP', 'BRRIP', 'BDRIP']
+BLOG_Q_MAP[QUALITIES.HD]=['720', '1080']
+
+HOST_Q={}
+HOST_Q[QUALITIES.LOW]=['youwatch.org', 'allmyvideos.net']
+HOST_Q[QUALITIES.MEDIUM]=['primeshare.tv', 'exashare.com', 'bestreams.net', 'flashx.tv', 'vidto.me', 'vodlocker.com']
+HOST_Q[QUALITIES.HIGH]=['vidzi.tv', 'vidspot.net']
+HOST_Q[QUALITIES.HD]=['thefile.me', 'sharesix', 'mightyupload', 'filenuke', 'hugefiles', '180upload', 'vidxden']
+
+Q_ORDER = {QUALITIES.LOW: 1, QUALITIES.MEDIUM: 2, QUALITIES.HIGH: 3, QUALITIES.HD: 4}

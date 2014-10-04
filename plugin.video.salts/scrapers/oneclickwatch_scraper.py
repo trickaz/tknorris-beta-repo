@@ -22,18 +22,16 @@ import re
 import datetime
 import time
 import xbmcaddon
+import xbmc
 from salts_lib import log_utils
 from salts_lib.constants import VIDEO_TYPES
 from salts_lib.db_utils import DB_Connection
 from salts_lib.constants import QUALITIES
+from salts_lib.constants import HOST_Q
+from salts_lib.constants import Q_ORDER
+from salts_lib.constants import BLOG_Q_MAP
 
 BASE_URL = 'http://oneclickwatch.org'
-
-QUALITY_MAP={}
-QUALITY_MAP[QUALITIES.LOW]=[' CAM ', ' TS ']
-QUALITY_MAP[QUALITIES.HIGH]=['HDRIP', 'DVDRIP']
-QUALITY_MAP[QUALITIES.HD]=['720', '1080', 'BLURAY', 'BRRIP']
-Q_ORDER = {QUALITIES.LOW: 1, QUALITIES.HIGH: 2, QUALITIES.HD: 3}
 
 class OneClickWatch_Scraper(scraper.Scraper):
     base_url=BASE_URL
@@ -63,16 +61,17 @@ class OneClickWatch_Scraper(scraper.Scraper):
             url = urlparse.urljoin(self.base_url,source_url)
             html = self._http_get(url, cache_limit=.5)
 
-            quality = None
+            q_str = ''
             match = re.search('class="title">([^<]+)', html)
             if match:
-                quality = self.__get_quality(video, match.group(1))
+                q_str = match.group(1)
                 
             pattern = '^<a\s+href="([^"]+)"\s+rel="nofollow"'
             for match in re.finditer(pattern, html, re.M):
                 url=match.group(1)
-                hoster={'multi-part': False, 'class': self, 'views': None, 'url': url, 'rating': None, 'quality': quality, 'direct': False}
+                hoster={'multi-part': False, 'class': self, 'views': None, 'url': url, 'rating': None, 'direct': False}
                 hoster['host']=urlparse.urlsplit(url).hostname
+                hoster['quality']=self._blog_get_quality(video, q_str, hoster['host'])
                 hosters.append(hoster)
 
         return hosters
@@ -100,7 +99,7 @@ class OneClickWatch_Scraper(scraper.Scraper):
                         match = re.search('\[(.*)\]$', result['title'])
                         if match:
                             q_str = match.group(1)
-                            quality=self.__get_quality(video, q_str)
+                            quality=self._blog_get_quality(video, q_str, '')
                             #print 'result: |%s|%s|%s|%s|' % (result, q_str, quality, Q_ORDER[quality])
                             if Q_ORDER[quality]>=best_qorder:
                                 if Q_ORDER[quality] > best_qorder or (quality == QUALITIES.HD and '1080' in q_str and '1080' not in best_qstr):
@@ -112,20 +111,6 @@ class OneClickWatch_Scraper(scraper.Scraper):
                 url = best_result['url']
                 self.db_connection.set_related_url(video.video_type, video.title, video.year, self.get_name(), url)
         return url
-
-    def __get_quality(self, video, q_str):
-        q_str.replace(video.title, '')
-        q_str.replace(str(video.year), '')
-        q_str = q_str.upper()
-        # Assume movies are low quality, tv shows are high quality
-        if video.video_type == VIDEO_TYPES.MOVIE:
-            quality = QUALITIES.LOW
-        else:
-            quality = QUALITIES.HIGH
-        for key in QUALITY_MAP:
-            if any(q in q_str for q in QUALITY_MAP[key]):
-                quality=key
-        return quality
 
     @classmethod
     def get_settings(cls):

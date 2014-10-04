@@ -21,18 +21,17 @@ import urlparse
 import re
 import datetime
 import xbmcaddon
+import xbmc
 from salts_lib import log_utils
 from salts_lib.constants import VIDEO_TYPES
 from salts_lib.db_utils import DB_Connection
 from salts_lib.constants import QUALITIES
+from salts_lib.constants import HOST_Q
+from salts_lib.constants import Q_ORDER
+from salts_lib.constants import BLOG_Q_MAP
+
 
 BASE_URL = 'http://myvideolinks.eu'
-
-QUALITY_MAP={}
-QUALITY_MAP[QUALITIES.LOW]=[' CAM ', ' TS ']
-QUALITY_MAP[QUALITIES.HIGH]=['HDRIP', 'DVDRIP']
-QUALITY_MAP[QUALITIES.HD]=['720', '1080', 'BLURAY', 'BRRIP']
-Q_ORDER = {QUALITIES.LOW: 1, QUALITIES.HIGH: 2, QUALITIES.HD: 3}
 
 class MyVidLinks_Scraper(scraper.Scraper):
     base_url=BASE_URL
@@ -81,26 +80,24 @@ class MyVidLinks_Scraper(scraper.Scraper):
         if match:
             q_str=match.group(1)
             
-        quality = self.get_quality(video, q_str)
-        
-        return self.__get_links(views, html, quality)
+        return self.__get_links(video, views, html, q_str)
     
     def __get_episode_links(self, video, views, html):
         pattern = '<h4>(.*?)</h4>(.*?)</ul>'
         hosters=[]
         for match in re.finditer(pattern, html, re.DOTALL):
             q_str, fragment = match.groups()
-            quality = self.get_quality(video, q_str)
-            hosters += self.__get_links(views, fragment, quality)
+            hosters += self.__get_links(video, views, fragment, q_str)
         return hosters
     
-    def __get_links(self, views, html, quality):
+    def __get_links(self, video, views, html, q_str):
         pattern = 'li>\s*<a\s+href="(http[^"]+)'
         hosters=[]
         for match in re.finditer(pattern, html):
             url=match.group(1)
-            hoster={'multi-part': False, 'class': self, 'views': views, 'url': url, 'rating': None, 'quality': quality, 'direct': False}
+            hoster={'multi-part': False, 'class': self, 'views': views, 'url': url, 'rating': None, 'quality': None, 'direct': False}
             hoster['host']=urlparse.urlsplit(url).hostname
+            hoster['quality']=self._blog_get_quality(video, q_str, hoster['host'])
             hosters.append(hoster)
         return hosters
     
@@ -128,7 +125,7 @@ class MyVidLinks_Scraper(scraper.Scraper):
                         match = re.search('\[(.*)\]$', result['title'])
                         if match:
                             q_str = match.group(1)
-                            quality=self.get_quality(video, q_str)
+                            quality=self._blog_get_quality(video, q_str, '')
                             #print 'result: |%s|%s|%s|%s|' % (result, q_str, quality, Q_ORDER[quality])
                             if Q_ORDER[quality]>=best_qorder:
                                 if Q_ORDER[quality] > best_qorder or (quality == QUALITIES.HD and '1080' in q_str and '1080' not in best_qstr):
@@ -140,20 +137,6 @@ class MyVidLinks_Scraper(scraper.Scraper):
                 url = best_result['url']
                 self.db_connection.set_related_url(video.video_type, video.title, video.year, self.get_name(), url)
         return url
-
-    def get_quality(self, video, q_str):
-        q_str.replace(video.title, '')
-        q_str.replace(video.year, '')
-        q_str = q_str.upper()
-        # Assume movies are low quality, tv shows are high quality
-        if video.video_type == VIDEO_TYPES.MOVIE:
-            quality = QUALITIES.LOW
-        else:
-            quality = QUALITIES.HIGH
-        for key in QUALITY_MAP:
-            if any(q in q_str for q in QUALITY_MAP[key]):
-                quality=key
-        return quality
 
     @classmethod
     def get_settings(cls):

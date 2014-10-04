@@ -30,12 +30,17 @@ from salts_lib import log_utils
 from salts_lib.db_utils import DB_Connection
 from salts_lib.constants import VIDEO_TYPES
 from salts_lib.constants import USER_AGENT
+from salts_lib.constants import QUALITIES
+from salts_lib.constants import HOST_Q
+from salts_lib.constants import Q_ORDER
+from salts_lib.constants import BLOG_Q_MAP
 
 BASE_URL=''
 CAPTCHA_BASE_URL = 'http://www.google.com/recaptcha/api'
-
 COOKIEPATH=xbmc.translatePath(xbmcaddon.Addon().getAddonInfo('profile'))
 COOKIEFILE=os.path.join(COOKIEPATH,'cookies.lwp')
+
+Q_LIST = [item[0] for item in sorted(Q_ORDER.items(), key=lambda x:x[1])]
 
 abstractstaticmethod = abc.abstractmethod
 class abstractclassmethod(classmethod):
@@ -192,7 +197,10 @@ class Scraper(object):
         name=cls.get_name()
         return ['         <setting id="%s-enable" type="bool" label="%s Enabled" default="true" visible="true"/>' % (name, name),
                     '         <setting id="%s-base_url" type="text" label="     Base Url" default="%s" visible="eq(-1,true)"/>' % (name, cls.base_url),
-                    '         <setting id="%s-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>' % (name)]
+                    '         <setting id="%s-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>' % (name),
+                    '         <setting id="%s_try" type="number" default="0" visible="false"/>' % (name),
+                    '         <setting id="%s_fail" type="number" default="0" visible="false"/>' % (name),
+                    '         <setting id="%s_check" type="number" default="0" visible="false"/>' % (name),]
     
     def _cached_http_get(self, url, base_url, timeout, cookies=None, data=None, cache_limit=8):
         if cookies is None: cookies={}
@@ -283,4 +291,39 @@ class Scraper(object):
         new_title=re.sub('\W', '', new_title)
         #log_utils.log('In title: |%s| Out title: |%s|' % (title,new_title), xbmc.LOGDEBUG)
         return new_title
+
+    def _blog_get_quality(self, video, q_str, host):
+        """
+        Use the q_str to determine the post quality; then use the host to determine host quality
+        allow the host to drop the quality but not increase it
+        """
+        q_str.replace(video.title, '')
+        q_str.replace(str(video.year), '')
+        q_str = q_str.upper()
+        
+        # Assume movies are low quality, tv shows are high quality
+        if video.video_type == VIDEO_TYPES.MOVIE:
+            quality = QUALITIES.LOW
+        else:
+            quality = QUALITIES.HIGH
+
+        post_quality = quality
+        for key in Q_LIST:
+            if any(q in q_str for q in BLOG_Q_MAP[key]):
+                post_quality=key
+        
+        host_quality=None
+        if host:
+            for key in HOST_Q:
+                if any(host in hostname for hostname in HOST_Q[key]):
+                    host_quality=key
+        
+        #log_utils.log('q_str: %s, host: %s, post q: %s, host q: %s' % (q_str, host, post_quality, host_quality), xbmc.LOGDEBUG)
+        if host_quality is not None and Q_ORDER[host_quality] < Q_ORDER[post_quality]:
+            quality=host_quality
+        else:
+            quality=post_quality
+
+        return quality
+
     

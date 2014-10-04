@@ -94,15 +94,22 @@ def update_url(video_type, title, year, source, old_url, new_url, season, episod
     if video_type == VIDEO_TYPES.TVSHOW and new_url != old_url:
         db_connection.clear_related_url(VIDEO_TYPES.EPISODE, title, year, source)
     
-def make_season_item(season, fanart):
+def make_season_item(season, watched, fanart):
+    playcount=1 if watched else 0
     label = 'Season %s' % (season['season'])
     season['images']['fanart']=fanart
     liz=make_list_item(label, season)
-    liz.setInfo('video', {'season': season['season']})
-
+    liz.setInfo('video', {'season': season['season'], 'playcount': playcount})
     menu_items=[]
     liz.addContextMenuItems(menu_items, replaceItems=True)
     return liz
+
+def make_season_watched(progress):
+    print progress
+    watched={}
+    for season in progress[0]['seasons']:
+        watched[season['season']]=season['left']==0
+    return watched
 
 def make_list_item(label, meta):
     art=make_art(meta)
@@ -244,6 +251,21 @@ def filter_exclusions(hosters):
             log_utils.log('Excluding %s (%s) from %s' % (hoster['url'], hoster['host'], hoster['class'].get_name()), xbmc.LOGDEBUG)
             continue
         filtered_hosters.append(hoster)
+    return filtered_hosters
+
+def filter_quality(video_type, hosters):
+    qual_filter = int(ADDON.get_setting('%s_quality' % video_type))
+    if qual_filter==0:
+        return hosters
+    elif qual_filter==1:
+        keep_qual=[QUALITIES.HD]
+    else:
+        keep_qual=[QUALITIES.LOW, QUALITIES.MEDIUM, QUALITIES.HIGH]
+    
+    filtered_hosters = []
+    for hoster in hosters:
+        if hoster['quality'] in keep_qual:
+            filtered_hosters.append(hoster)
     return filtered_hosters
 
 def get_sort_key(item):
@@ -584,8 +606,8 @@ def get_force_title_list():
     return filter_list
 
 def calculate_success(name):
-    tries=db_connection.get_setting('%s_try' % (name))
-    fail = db_connection.get_setting('%s_fail' % (name))
+    tries=ADDON.get_setting('%s_try' % (name))
+    fail = ADDON.get_setting('%s_fail' % (name))
     tries = int(tries) if tries else 0
     fail = int(fail) if fail else 0
     rate = int(round((fail*100.0)/tries)) if tries>0 else 0
@@ -596,7 +618,7 @@ def record_timeouts(fails):
     for key in fails:
         if fails[key]==True:
             log_utils.log('Recording Timeout of %s' % (key), xbmc.LOGWARNING)
-            db_connection.increment_db_setting('%s_fail' % key)
+            increment_setting('%s_fail' % key)
 
 def do_disable_check():
     scrapers=relevant_scrapers()
@@ -606,10 +628,10 @@ def do_disable_check():
     for cls in scrapers:
         last_check = db_connection.get_setting('%s_check' % (cls.get_name()))
         last_check = int(last_check) if last_check else 0
-        tries=db_connection.get_setting('%s_try' % (cls.get_name()))
+        tries=ADDON.get_setting('%s_try' % (cls.get_name()))
         tries = int(tries) if tries else 0
         if tries>0 and tries/check_freq>last_check/check_freq:
-            db_connection.set_setting('%s_check' % (cls.get_name()), str(tries))
+            ADDON.set_setting('%s_check' % (cls.get_name()), str(tries))
             success_rate=calculate_success(cls.get_name())
             if success_rate<disable_thresh:
                 if auto_disable == DISABLE_SETTINGS.ON:
@@ -627,3 +649,14 @@ def do_disable_check():
 
 def menu_on(menu):
     return ADDON.get_setting('show_%s' % (menu))=='true'
+
+def get_setting(setting):
+    return ADDON.get_setting(setting)
+
+def set_setting(setting, value):
+    ADDON.set_setting(setting, str(value))
+
+def increment_setting(setting):
+    cur_value = get_setting(setting)
+    cur_value = int(cur_value) if cur_value else 0
+    set_setting(setting, cur_value+1)

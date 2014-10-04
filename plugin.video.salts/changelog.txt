@@ -1,3 +1,13 @@
+[B]Version 0.0.24[/B]
+- Move success attributes to settings.xml (Better Performance; less db contention)
+- Consider hoster for quality when using oneclickwatch and myvideolinks.eu
+- Add enable all/disable all to scraper sort order
+- Add "Move To.." option in scraper sort order
+- Add HD/SD filter ot TV Shows and Movies
+- Add metadata to collection view (enables trailers in My Collections)
+- Add Remove From Collection
+- Set watched status on seasons
+
 [B]Version 0.0.23[/B]
 - Add ability to filter first X results that don't have a usable resolver
 - Minor scraper improvements/fixes to most scrapers
