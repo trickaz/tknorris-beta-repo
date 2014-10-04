@@ -80,9 +80,10 @@ class IWatchOnline_Scraper(scraper.Scraper):
                     hosters.append(hoster)
                 
                 unit=(max_age - min_age)/100
-                for hoster in hosters:
-                    hoster['rating']=(hoster['age']-min_age)/unit
-                    #print '%s, %s' % (hoster['rating'], hoster['age'])
+                if unit>0:
+                    for hoster in hosters:
+                        hoster['rating']=(hoster['age']-min_age)/unit
+                        #print '%s, %s' % (hoster['rating'], hoster['age'])
         return hosters
 
     def __get_age(self, now, age_str):

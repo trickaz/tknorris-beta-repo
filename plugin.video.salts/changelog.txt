@@ -1,4 +1,4 @@
-[B]Version 0.0.24[/B]
+[B]Version 0.0.25[/B]
 - Move success attributes to settings.xml (Better Performance; less db contention)
 - Consider hoster for quality when using oneclickwatch and myvideolinks.eu
 - Add enable all/disable all to scraper sort order

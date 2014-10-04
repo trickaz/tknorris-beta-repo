@@ -105,10 +105,10 @@ def make_season_item(season, watched, fanart):
     return liz
 
 def make_season_watched(progress):
-    print progress
     watched={}
-    for season in progress[0]['seasons']:
-        watched[season['season']]=season['left']==0
+    if progress:
+        for season in progress[0]['seasons']:
+            watched[season['season']]=season['left']==0
     return watched
 
 def make_list_item(label, meta):
