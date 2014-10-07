@@ -46,23 +46,25 @@
 	             default="special://userdata/addon_data/plugin.video.salts/TVShows"/>
 	    <setting id="movie-folder" type="folder" label="Movie Folder"
 	             default="special://userdata/addon_data/plugin.video.salts/Movies"/>
-		<setting id="require_source" type="bool" label="Require Site Page?" default="true" visible="true"/>
 		<setting id="auto-update_subs" type="bool" label="Automatically Update Subscriptions" default="false"/>
 		<setting id="update_subs-interval" type="slider" range=".5,.5,24" option="float" label="     Update Interval (hours)" default="2" visible="eq(-1,true)"/>
 		<setting id="update_subs-during-startup" type="bool" label="     During StartUp?" default="false" visible="eq(-2,true)"/>
 		<setting id="update_subs-during-playback" type="bool" label="     During Playback?" default="false" visible="eq(-3,true)"/>
-		<setting id="include_movies" type="bool" label="     Include Movies?" default="false" visible="eq(-4,true)"/>
-		<setting id="library-update" type="bool" label="     Update Library Afterward?" default="false" visible="eq(-5,true)"/>
-		<setting id="update_subs-notify" type="bool" label="     Show Notifications?" default="false" visible="eq(-6,true)"/>
-		<setting id="cleanup-subscriptions" type="bool" label="     Prune Ended Shows?" default="false" visible="eq(-7,true)"/>
+		<setting id="require_source" type="bool" label="Require Site Page for Movies?" default="true" visible="true"/>
+		<setting id="include_specials" type="bool" label="Include specials in library?" default="false" visible="true"/>
+		<setting id="library-update" type="bool" label="Update Library Afterward?" default="false" visible="true"/>
+		<setting id="update_subs-notify" type="bool" label="Show Notifications?" default="false" visible="true"/>
+		<setting id="include_movies" type="bool" label="Include Movies?" default="false" visible="true"/>
+		<setting id="cleanup-subscriptions" type="bool" label="Prune Ended Shows?" default="false" visible="true"/>
+		<setting id="exists_list" type="text" visible="false"/>
 	</category>
 
 	<category label="Source Management">
         <setting id="auto-play" type="bool" label="Auto-Play Sources" default="false"/>
 		<setting id="source-win" type="labelenum" label="     Source Selection Method" values="Directory|Dialog" default="Dialog"/>		
 		<setting id="source_timeout" type="slider" label="Scraper Timeout (seconds) (0=No Limit)" default="10" range="0,120" option="int"/>
-		<setting id="source_results" type="number" label="Maximum Sources Results (0=No Limit)" default="0"/>
-		<setting id="filter_unusable" type="number" label="Filter Top Unsuable Sources (0=None)" default="50"/>
+		<setting id="source_results" type="number" label="Maximum Source Results (0=No Limit)" default="0"/>
+		<setting id="filter_unusable" type="number" label="Filter Top Unusable Sources (0=None)" default="50"/>
 		<setting id="excl_list" type="text" label="Source Exclusion List" default=""/>
 		<setting id="Episode_quality" type="enum" label="Allowed TV Show Quality" values="HD & SD|HD Only|SD Only" default="0" visible="true"/>
 		<setting id="Movie_quality" type="enum" label="Allowed Movie Quality" values="HD & SD|HD Only|SD Only" default="0" visible="true"/>

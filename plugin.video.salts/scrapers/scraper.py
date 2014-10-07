@@ -223,6 +223,7 @@ class Scraper(object):
             html=response.read()
         except Exception as e:
             log_utils.log('Error (%s) during scraper http get: %s' % (str(e), url), xbmc.LOGWARNING)
+            return ''
         
         db_connection.cache_url(url, html)
         return html
@@ -267,24 +268,25 @@ class Scraper(object):
         log_utils.log('Default Episode Url: |%s|%s|%s|' % (self.base_url, show_url, str(video).decode('utf-8', 'replace')), xbmc.LOGDEBUG)
         url = urlparse.urljoin(self.base_url, show_url)
         html = self._http_get(url, cache_limit=2)
-        slug_str = xbmcaddon.Addon().getSetting('force_title_match')
-        slug_list = slug_str.split('|') if slug_str else []
-        force_title = video.slug in slug_list
-        
-        if not force_title: 
-            match = re.search(episode_pattern, html, re.DOTALL)
-            if match:
-                url = match.group(1)
-                return url.replace(self.base_url, '')
-        else:
-            log_utils.log('Skipping S&E matching as title search is forced on: %s' % (video.slug), xbmc.LOGDEBUG)
-        
-        if (force_title or xbmcaddon.Addon().getSetting('title-fallback')=='true') and video.ep_title and title_pattern:
-            norm_title = self._normalize_title(video.ep_title)
-            for match in re.finditer(title_pattern, html, re.DOTALL | re.I):
-                url, title = match.groups()
-                if norm_title == self._normalize_title(title):
+        if html:
+            slug_str = xbmcaddon.Addon().getSetting('force_title_match')
+            slug_list = slug_str.split('|') if slug_str else []
+            force_title = video.slug in slug_list
+            
+            if not force_title: 
+                match = re.search(episode_pattern, html, re.DOTALL)
+                if match:
+                    url = match.group(1)
                     return url.replace(self.base_url, '')
+            else:
+                log_utils.log('Skipping S&E matching as title search is forced on: %s' % (video.slug), xbmc.LOGDEBUG)
+            
+            if (force_title or xbmcaddon.Addon().getSetting('title-fallback')=='true') and video.ep_title and title_pattern:
+                norm_title = self._normalize_title(video.ep_title)
+                for match in re.finditer(title_pattern, html, re.DOTALL | re.I):
+                    url, title = match.groups()
+                    if norm_title == self._normalize_title(title):
+                        return url.replace(self.base_url, '')
 
     def _normalize_title(self, title):
         new_title=title.upper()

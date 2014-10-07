@@ -94,22 +94,33 @@ def update_url(video_type, title, year, source, old_url, new_url, season, episod
     if video_type == VIDEO_TYPES.TVSHOW and new_url != old_url:
         db_connection.clear_related_url(VIDEO_TYPES.EPISODE, title, year, source)
     
-def make_season_item(season, watched, fanart):
-    playcount=1 if watched else 0
+def make_season_item(season, info, fanart):
     label = 'Season %s' % (season['season'])
     season['images']['fanart']=fanart
     liz=make_list_item(label, season)
-    liz.setInfo('video', {'season': season['season'], 'playcount': playcount})
+    log_utils.log('Season Info: %s' % (info), xbmc.LOGDEBUG)
+    liz.setInfo('video', info)
     menu_items=[]
     liz.addContextMenuItems(menu_items, replaceItems=True)
     return liz
 
-def make_season_watched(progress):
-    watched={}
+def make_seasons_info(progress):
+    season_info={}
     if progress:
+        show = progress[0]['show']
         for season in progress[0]['seasons']:
-            watched[season['season']]=season['left']==0
-    return watched
+            info={}
+            if 'title' in show: info['TVShowTitle']=show['title']
+            if 'year' in show: info['year']=show['year']
+            if 'imdb_id' in show: info['code']=info['imdbnumber']=info['imdb_id']=show['imdb_id']
+            if 'tvdb_id' in show: info['tvdb_id']=show['tvdb_id']
+            if 'aired' in season: info['episode']=info['TotalEpisodes']=season['aired']
+            if 'completed' in season: info['WatchedEpisodes']=season['completed']
+            if 'left' in season: info['UnWatchedEpisodes']=season['left']
+            if 'completed' in season and 'left' in season: info['playcount']=season['completed'] if season['left']==0 else 0
+            if 'season' in season: info['season']=season['season']
+            season_info[str(season['season'])]=info
+    return season_info
 
 def make_list_item(label, meta):
     art=make_art(meta)
@@ -660,3 +671,11 @@ def increment_setting(setting):
     cur_value = get_setting(setting)
     cur_value = int(cur_value) if cur_value else 0
     set_setting(setting, cur_value+1)
+
+def show_requires_source(slug):
+    show_str = ADDON.get_setting('exists_list')
+    show_list = show_str.split('|')
+    if slug in show_list:
+        return True
+    else:
+        return False
