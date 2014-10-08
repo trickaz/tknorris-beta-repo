@@ -93,7 +93,7 @@ def update_url(video_type, title, year, source, old_url, new_url, season, episod
     # clear all episode local urls if tvshow url changes
     if video_type == VIDEO_TYPES.TVSHOW and new_url != old_url:
         db_connection.clear_related_url(VIDEO_TYPES.EPISODE, title, year, source)
-    
+
 def make_season_item(season, info, fanart):
     label = 'Season %s' % (season['season'])
     season['images']['fanart']=fanart
@@ -107,8 +107,8 @@ def make_season_item(season, info, fanart):
 def make_seasons_info(progress):
     season_info={}
     if progress:
-        show = progress[0]['show']
-        for season in progress[0]['seasons']:
+        show = progress['show']
+        for season in progress['seasons']:
             info={}
             if 'title' in show: info['TVShowTitle']=show['title']
             if 'year' in show: info['year']=show['year']

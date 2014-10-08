@@ -107,6 +107,7 @@ class Scraper(object):
         Each dictionary must contain elements of at least:
             * multi-part: True if this source is one part of a whole
             * class: a reference to an instance of the scraper itself
+            * host: the hostname of the hoster
             * url: the url that is a link to a hoster, or a link to a page that this scraper can resolve to a link to a hoster
             * quality: one of the QUALITIES values, or None if unknown; users can sort sources by quality
             * views: count of the views from the site for this source or None is unknown; Users can sort sources by views
