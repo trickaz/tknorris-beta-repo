@@ -7,6 +7,7 @@ import xbmc
 import xbmcgui
 import xbmcplugin
 import xbmcaddon
+import xbmcvfs
 import log_utils
 import sys
 import hashlib
@@ -93,16 +94,6 @@ def update_url(video_type, title, year, source, old_url, new_url, season, episod
     # clear all episode local urls if tvshow url changes
     if video_type == VIDEO_TYPES.TVSHOW and new_url != old_url:
         db_connection.clear_related_url(VIDEO_TYPES.EPISODE, title, year, source)
-
-def make_season_item(season, info, fanart):
-    label = 'Season %s' % (season['season'])
-    season['images']['fanart']=fanart
-    liz=make_list_item(label, season)
-    log_utils.log('Season Info: %s' % (info), xbmc.LOGDEBUG)
-    liz.setInfo('video', info)
-    menu_items=[]
-    liz.addContextMenuItems(menu_items, replaceItems=True)
-    return liz
 
 def make_seasons_info(progress):
     season_info={}
@@ -213,19 +204,19 @@ def make_info(item, show=''):
     if 'people' in show: info['castandrole']=['%s as %s' % (actor['name'],actor['character']) for actor in show['people']['actors'] if actor['name'] and actor['character']]
     return info
     
-def get_section_params(section, set_sort=True):
+def get_section_params(section):
     section_params={}
     section_params['section']=section
     if section==SECTIONS.TV:
-        set_view('tvshows', set_sort)
         section_params['next_mode']=MODES.SEASONS
         section_params['folder']=True
         section_params['video_type']=VIDEO_TYPES.TVSHOW
+        section_params['content_type']=CONTENT_TYPES.TVSHOWS
     else:
-        set_view('movies', set_sort)
         section_params['next_mode']=MODES.GET_SOURCES
         section_params['folder']=ADDON.get_setting('source-win')=='Directory' and ADDON.get_setting('auto-play')=='false'
         section_params['video_type']=VIDEO_TYPES.MOVIE
+        section_params['content_type']=CONTENT_TYPES.MOVIES
     return section_params
 
 def filename_from_title(title, video_type, year=None):
@@ -462,6 +453,11 @@ def set_view(content, set_sort):
     # set content type so library shows more views and info
     if content:
         xbmcplugin.setContent(int(sys.argv[1]), content)
+    
+    view = ADDON.get_setting('%s_view' % (content))
+    if view != '0':
+        log_utils.log('Setting View to %s (%s)' % (view, content), xbmc.LOGDEBUG)
+        xbmc.executebuiltin('Container.SetViewMode(%s)' % (view))
 
     # set sort methods - probably we don't need all of them
     if set_sort:
@@ -679,3 +675,30 @@ def show_requires_source(slug):
         return True
     else:
         return False
+
+def keep_search(section, search_text):
+    head = int(ADDON.get_setting('%s_search_head' % (section)))
+    new_head = (head + 1) % SEARCH_HISTORY
+    log_utils.log('Setting %s to %s' % (new_head, search_text), xbmc.LOGDEBUG)
+    db_connection.set_setting('%s_search_%s' % (section, new_head), search_text)
+    ADDON.set_setting('%s_search_head' % (section), str(new_head))
+
+def get_current_view():
+    skin = xbmc.getSkinDir()
+    skinPath = xbmc.translatePath('special://skin/')
+    xml = os.path.join(skinPath,'addon.xml')
+    file = xbmcvfs.File(xml)
+    read = file.read().replace('\n','')
+    file.close()
+    try: src = re.compile('defaultresolution="(.+?)"').findall(read)[0]
+    except: src = re.compile('<res.+?folder="(.+?)"').findall(read)[0]
+    src = os.path.join(skinPath, src)
+    src = os.path.join(src, 'MyVideoNav.xml')
+    file = xbmcvfs.File(src)
+    read = file.read().replace('\n','')
+    file.close()
+    views = re.compile('<views>(.+?)</views>').findall(read)[0]
+    for view in views.split(','):
+        label = xbmc.getInfoLabel('Control.GetLabel(%s)' % (view))
+        if label:
+            return view

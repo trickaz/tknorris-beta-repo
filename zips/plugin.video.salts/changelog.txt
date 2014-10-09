@@ -1,3 +1,8 @@
+[B]Version 0.0.28[/B]
+- Add recent & saved searches
+- Added new addon icon from SparkGFX
+- Added set default view menu items
+
 [B]Version 0.0.27[/B]
 - Fix season meta when no account configured
 - Added scraper for local library

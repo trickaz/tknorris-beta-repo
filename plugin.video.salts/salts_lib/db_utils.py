@@ -28,7 +28,7 @@ def enum(**enums):
     return type('Enum', (), enums)
 
 DB_TYPES= enum(MYSQL='mysql', SQLITE='sqlite')
-CSV_MARKERS = enum(REL_URL='***REL_URL***', OTHER_LISTS='***OTHER_LISTS***')
+CSV_MARKERS = enum(REL_URL='***REL_URL***', OTHER_LISTS='***OTHER_LISTS***', SAVED_SEARCHES='***SAVED_SEARCHES***')
 TRIG_DB_UPG = False
 
 _SALTS = Addon('plugin.video.salts')
@@ -162,6 +162,26 @@ class DB_Connection():
         rows=self.__execute(sql)
         return rows
         
+    def get_searches(self, section, order_matters=False):
+        sql = 'SELECT id, query FROM saved_searches WHERE section=?'
+        if order_matters: sql += 'ORDER BY added desc'
+        rows=self.__execute(sql, (section,))
+        return rows
+    
+    def get_all_searches(self):
+        sql = 'SELECT * FROM saved_searches'
+        rows=self.__execute(sql)
+        return rows
+
+    def save_search(self, section, query, added=None):
+        if added is None: added = time.time()
+        sql = 'INSERT INTO saved_searches (section, added, query) VALUES (?, ?, ?)'
+        self.__execute(sql, (section, added, query))
+
+    def delete_search(self, search_id):
+        sql = 'DELETE FROM saved_searches WHERE id=?'
+        self.__execute(sql, (search_id, ))
+
     def get_setting(self, setting):
         sql = 'SELECT value FROM db_info WHERE setting=?'
         rows=self.__execute(sql, (setting,))
@@ -189,6 +209,10 @@ class DB_Connection():
             if self.__table_exists('other_lists'):
                 f.write(CSV_MARKERS.OTHER_LISTS+'\n')
                 for sub in self.get_all_other_lists():
+                    writer.writerow(sub)
+            if self.__table_exists('saved_searches'):
+                f.write(CSV_MARKERS.SAVED_SEARCHES+'\n')
+                for sub in self.get_all_searches():
                     writer.writerow(sub)
         
         log_utils.log('Copying export file from: |%s| to |%s|' %(temp_path, full_path), xbmc.LOGDEBUG)
@@ -221,7 +245,7 @@ class DB_Connection():
                         progress.update(i*100/num_lines, line3='Importing %s of %s' % (i, num_lines))
                         if progress.iscanceled():
                             return
-                        if line[0] in [CSV_MARKERS.REL_URL, CSV_MARKERS.OTHER_LISTS]:
+                        if line[0] in [CSV_MARKERS.REL_URL, CSV_MARKERS.OTHER_LISTS, CSV_MARKERS.SAVED_SEARCHES]:
                             mode=line[0]
                             continue
                         elif mode==CSV_MARKERS.REL_URL:
@@ -229,6 +253,8 @@ class DB_Connection():
                         elif mode==CSV_MARKERS.OTHER_LISTS:
                             name = None if len(line)!=4 else line[3]
                             self.add_other_list(line[0], line[1], line[2], name)
+                        elif mode==CSV_MARKERS.SAVED_SEARCHES:
+                            self.save_search(line[1], line[3], line[2]) # column order is different than method order
                         else:
                             raise Exception('CSV line found while in no mode')
                         i += 1
@@ -263,6 +289,8 @@ class DB_Connection():
             PRIMARY KEY(video_type, title, year, season, episode, source))')
             self.__execute('CREATE TABLE IF NOT EXISTS other_lists (section VARCHAR(10) NOT NULL, username VARCHAR(255) NOT NULL, slug VARCHAR(255) NOT NULL, name VARCHAR(255), \
             PRIMARY KEY(section, username, slug))')
+            self.__execute('CREATE TABLE IF NOT EXISTS saved_searches (id INTEGER NOT NULL AUTO_INCREMENT, section VARCHAR(10) NOT NULL, added DOUBLE NOT NULL,query VARCHAR(255) NOT NULL, \
+            PRIMARY KEY(id))')
         else:
             self.__create_sqlite_db()
             self.__execute('CREATE TABLE IF NOT EXISTS url_cache (url VARCHAR(255) NOT NULL, response, timestamp, PRIMARY KEY(url))')
@@ -271,6 +299,7 @@ class DB_Connection():
             (video_type TEXT NOT NULL, title TEXT NOT NULL, year TEXT NOT NULL, season TEXT NOT NULL, episode TEXT NOT NULL, source TEXT NOT NULL, rel_url TEXT, \
             PRIMARY KEY(video_type, title, year, season, episode, source))')
             self.__execute('CREATE TABLE IF NOT EXISTS other_lists (section TEXT NOT NULL, username TEXT NOT NULL, slug TEXT NOT NULL, name TEXT, PRIMARY KEY(section, username, slug))')
+            self.__execute('CREATE TABLE IF NOT EXISTS saved_searches (id INTEGER PRIMARY KEY, section TEXT NOT NULL, added DOUBLE NOT NULL,query TEXT NOT NULL)')
                 
         # reload the previously saved backup export
         if db_version is not None and cur_version !=  db_version:
