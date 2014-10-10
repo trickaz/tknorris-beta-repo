@@ -130,7 +130,7 @@ class PW_Scraper(scraper.Scraper):
         return results
     
     def _get_episode_url(self, show_url, video):
-        episode_pattern = '"tv_episode_item".+?href="([^"]+/season-%s-episode-%s)">' % (video.season, video.episode)
+        episode_pattern = '"tv_episode_item">[^>]+href="([^"]+/season-%s-episode-%s)">' % (video.season, video.episode)
         title_pattern='class="tv_episode_item".*?href="([^"]+).*?class="tv_episode_name">\s+-\s+([^<]+)'
         return super(PW_Scraper, self)._default_get_episode_url(show_url, video, episode_pattern, title_pattern)
         

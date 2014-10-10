@@ -95,29 +95,30 @@ class UFlix_Scraper(scraper.Scraper):
         
         # filter the html down to only tvshow or movie results
         if video_type in [VIDEO_TYPES.TVSHOW, VIDEO_TYPES.SEASON, VIDEO_TYPES.EPISODE]:
-            pattern='<div id="grid2".*'
+            pattern='id="series".*'
             pattern2 = '<a title="Watch (.*?) Online For FREE".*?href="([^"]+)".*\((\d{1,4})\)</a>'
         else:
-            pattern='<div id="grid".*<div id="grid2"'
+            pattern='id="movies".*id="series"'
             pattern2 = 'visible-sm">\s+<a\s+title="([^"]+)\s+(\d{4})".*?href="([^"]+)"'
         match = re.search(pattern, html, re.DOTALL)
-        try:
-            fragment = match.group(0)
-            for match in re.finditer(pattern2, fragment):
-                result={}
-                
-                if video_type == VIDEO_TYPES.MOVIE:
-                    res_title, res_year, url = match.groups('')
-                else:
-                    res_title, url, res_year = match.groups('')
+        if match:
+            try:
+                fragment = match.group(0)
+                for match in re.finditer(pattern2, fragment):
+                    result={}
                     
-                if not year or year == res_year:                
-                    result['title']=res_title
-                    result['url']=url.replace(self.base_url,'')
-                    result['year']=res_year
-                    results.append(result)
-        except Exception as e:
-            log_utils.log('Failure during %s search: |%s|%s|%s| (%s)' % (self.get_name(), video_type, title, year, str(e)), xbmc.LOGWARNING)
+                    if video_type == VIDEO_TYPES.MOVIE:
+                        res_title, res_year, url = match.groups('')
+                    else:
+                        res_title, url, res_year = match.groups('')
+                        
+                    if not year or year == res_year:                
+                        result['title']=res_title
+                        result['url']=url.replace(self.base_url,'')
+                        result['year']=res_year
+                        results.append(result)
+            except Exception as e:
+                log_utils.log('Failure during %s search: |%s|%s|%s| (%s)' % (self.get_name(), video_type, title, year, str(e)), xbmc.LOGWARNING)
         
         return results
         

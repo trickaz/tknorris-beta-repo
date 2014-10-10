@@ -28,6 +28,7 @@ from salts_lib import GKDecrypter
 from salts_lib import log_utils
 from salts_lib.constants import VIDEO_TYPES
 from salts_lib.constants import QUALITIES
+from salts_lib.constants import USER_AGENT
 
 BASE_URL = 'http://shush.se'
 
@@ -62,14 +63,15 @@ class Shush_Scraper(scraper.Scraper):
             match = re.search(',(http.*?proxy\.swf)&proxy\.link=([^&]+)', html)            
             if match:
                 swf_link, proxy_link = match.groups()
+                swf_link = swf_link.replace('proxy.swf', '')
                 if proxy_link.startswith('http'):
-                    swf_link = swf_link.replace('proxy.swf', 'pluginslist.xml')
-                    html = self._http_get(swf_link, cache_limit=0)
-                    match = re.search('url="(http.*?)b.swf', html)
+                    xml_link = swf_link + 'pluginslist.xml'
+                    html = self._http_get(xml_link, cache_limit=0)
+                    match = re.search('url="(.*?)b.swf', html)
                     if match:
                         player_url = match.group(1)
-                        url = player_url + 'plugins_player.php'
-                        data = {'url': proxy_link}
+                        url = swf_link + player_url + 'plugins_player.php'
+                        data = {'url': proxy_link, 'isslverify': 'true', 'ihttpheader': 'true', 'iheader': 'true', 'iagent': USER_AGENT}
                         html = self._http_get(url, data=data, cache_limit=0)
                         if 'fmt_stream_map' in html:
                             sources = self.__parse_fmt(html)

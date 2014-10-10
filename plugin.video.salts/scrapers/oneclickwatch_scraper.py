@@ -115,6 +115,7 @@ class OneClickWatch_Scraper(scraper.Scraper):
     @classmethod
     def get_settings(cls):
         settings = super(OneClickWatch_Scraper, cls).get_settings()
+        del settings[2]
         name=cls.get_name()
         settings.append('         <setting id="%s-filter" type="slider" range="0,180" option="int" label="     Filter results older than (0=No Filter) (days)" default="30" visible="eq(-3,true)"/>' % (name))
         settings.append('         <setting id="%s-select" type="enum" label="     Automatically Select (Movies only)" values="Most Recent|Highest Quality" default="0" visible="eq(-4,true)"/>' % (name))

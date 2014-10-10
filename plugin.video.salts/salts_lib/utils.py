@@ -684,21 +684,19 @@ def keep_search(section, search_text):
     ADDON.set_setting('%s_search_head' % (section), str(new_head))
 
 def get_current_view():
-    skin = xbmc.getSkinDir()
     skinPath = xbmc.translatePath('special://skin/')
     xml = os.path.join(skinPath,'addon.xml')
-    file = xbmcvfs.File(xml)
-    read = file.read().replace('\n','')
-    file.close()
-    try: src = re.compile('defaultresolution="(.+?)"').findall(read)[0]
-    except: src = re.compile('<res.+?folder="(.+?)"').findall(read)[0]
-    src = os.path.join(skinPath, src)
-    src = os.path.join(src, 'MyVideoNav.xml')
-    file = xbmcvfs.File(src)
-    read = file.read().replace('\n','')
-    file.close()
-    views = re.compile('<views>(.+?)</views>').findall(read)[0]
-    for view in views.split(','):
-        label = xbmc.getInfoLabel('Control.GetLabel(%s)' % (view))
-        if label:
-            return view
+    f = xbmcvfs.File(xml)
+    read = f.read()
+    f.close()
+    try: src = re.search('defaultresolution="([^"]+)', read, re.DOTALL).group(1)
+    except: src = re.search('<res.+?folder="([^"]+)', read, re.DOTALL).group(1)
+    src = os.path.join(skinPath, src, 'MyVideoNav.xml')
+    f = xbmcvfs.File(src)
+    read = f.read()
+    f.close()
+    match = re.search('<views>([^<]+)', read, re.DOTALL)
+    if match:
+        views = match.group(1)
+        for view in views.split(','):
+            if xbmc.getInfoLabel('Control.GetLabel(%s)' % (view)): return view

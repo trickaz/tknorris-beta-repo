@@ -1,3 +1,11 @@
+[B]Version 0.0.29[/B]
+- Fix friends activity
+- Add noobroom scraper
+- Fix shush.se scraper
+- Improve get_view code
+- Fix occasional error in primewire scraper
+- Fix uflix search
+
 [B]Version 0.0.28[/B]
 - Add recent & saved searches
 - Added new addon icon from SparkGFX

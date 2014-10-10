@@ -276,7 +276,7 @@ def browse_recommendations(section):
 @url_dispatcher.register(MODES.FRIENDS, ['mode', 'section'])
 @url_dispatcher.register(MODES.FRIENDS_EPISODE, ['mode', 'section'])
 def browse_friends(mode, section):
-    section_params=utils.get_section_params(section, set_sort = False)
+    section_params=utils.get_section_params(section)
     activities=trakt_api.get_friends_activity(section, mode==MODES.FRIENDS_EPISODE)
     totalItems=len(activities)
     
