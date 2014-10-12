@@ -112,11 +112,11 @@ class IStreamHD_Scraper(scraper.Scraper):
         
     @classmethod
     def get_settings(cls):
+        settings = super(IStreamHD_Scraper, cls).get_settings()
         name=cls.get_name()
-        return ['         <setting id="%s-enable" type="bool" label="%s Enabled" default="true" visible="true"/>' % (name, name),
-                    '         <setting id="%s-base_url" type="text" label="     Base Url" default="%s" visible="eq(-1,true)"/>' % (name, cls.base_url),
-                    '         <setting id="%s-username" type="text" label="     Username" default="" visible="eq(-2,true)"/>' % (name),
-                    '         <setting id="%s-password" type="text" label="     Password" option="hidden" default="" visible="eq(-3,true)"/>' % (name)]
+        settings.append('         <setting id="%s-username" type="text" label="     Username" default="" visible="eq(-6,true)"/>' % (name))
+        settings.append('         <setting id="%s-password" type="text" label="     Password" option="hidden" default="" visible="eq(-7,true)"/>' % (name))
+        return settings
     
     def _http_get(self, url, data=None, cache_limit=8):
         # return all uncached blank pages if no user or pass

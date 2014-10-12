@@ -131,7 +131,7 @@ class NoobRoom_Scraper(scraper.Scraper):
                 url, match_title, match_year = match.groups('')
                 if not year or not match_year or year == match_year:
                     result = {'url': url, 'title': match_title, 'year': match_year}
-                results.append(result)
+                    results.append(result)
             
         return results
     
@@ -139,9 +139,9 @@ class NoobRoom_Scraper(scraper.Scraper):
     def get_settings(cls):
         settings = super(NoobRoom_Scraper, cls).get_settings()
         name=cls.get_name()
-        settings.append('         <setting id="%s-username" type="text" label="     Username" default="" visible="eq(-3,true)"/>' % (name))
-        settings.append('         <setting id="%s-password" type="text" label="     Password" option="hidden" default="" visible="eq(-4,true)"/>' % (name))
-        settings.append('         <setting id="%s-include_premium" type="bool" label="     Include Premium" default="false" visible="eq(-5,true)"/>' % (name))
+        settings.append('         <setting id="%s-username" type="text" label="     Username" default="" visible="eq(-6,true)"/>' % (name))
+        settings.append('         <setting id="%s-password" type="text" label="     Password" option="hidden" default="" visible="eq(-7,true)"/>' % (name))
+        settings.append('         <setting id="%s-include_premium" type="bool" label="     Include Premium" default="false" visible="eq(-8,true)"/>' % (name))
         return settings
     
     def _http_get(self, url, data=None, cache_limit=8):

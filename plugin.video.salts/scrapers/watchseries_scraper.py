@@ -108,6 +108,5 @@ class WS_Scraper(scraper.Scraper):
     @classmethod
     def get_settings(cls):
         settings=super(WS_Scraper, cls).get_settings()
-        # force watchseries to not partipcate in url exists since they create pages before links are available
-        del settings[2]
+        settings = cls._disable_sub_check(settings)
         return settings

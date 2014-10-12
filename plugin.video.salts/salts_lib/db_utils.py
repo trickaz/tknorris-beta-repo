@@ -28,7 +28,7 @@ def enum(**enums):
     return type('Enum', (), enums)
 
 DB_TYPES= enum(MYSQL='mysql', SQLITE='sqlite')
-CSV_MARKERS = enum(REL_URL='***REL_URL***', OTHER_LISTS='***OTHER_LISTS***', SAVED_SEARCHES='***SAVED_SEARCHES***')
+CSV_MARKERS = enum(REL_URL='***REL_URL***', OTHER_LISTS='***OTHER_LISTS***', SAVED_SEARCHES='***SAVED_SEARCHES***', BOOKMARKS='***BOOKMARKS***')
 TRIG_DB_UPG = False
 
 _SALTS = Addon('plugin.video.salts')
@@ -68,40 +68,41 @@ class DB_Connection():
         sql = 'DELETE FROM url_cache'
         self.__execute(sql)
 
-    # return the bookmark for the requested url or None if not found
-    def get_bookmark(self,url):
-        if not url: return None
-        sql='SELECT resumepoint FROM new_bkmark where url=?'
-        bookmark = self.__execute(sql, (url,))
+    def get_bookmark(self, slug, season='', episode=''):
+        if not slug: return None
+        sql='SELECT resumepoint FROM bookmark where slug=? and season=? and episode=?'
+        bookmark = self.__execute(sql, (slug, season, episode))
         if bookmark:
             return bookmark[0][0]
         else:
             return None
 
-    # get all bookmarks
     def get_bookmarks(self):
-        sql='SELECT * FROM new_bkmark'
+        sql='SELECT * FROM bookmark'
         bookmarks = self.__execute(sql)
         return bookmarks
     
-    # return true if bookmark exists
-    def bookmark_exists(self, url):
-        return self.get_bookmark(url) != None
+    def bookmark_exists(self, slug, season='', episode=''):
+        return self.get_bookmark(slug, season, episode) != None
     
-    def set_bookmark(self, url,offset):
-        if not url: return
-        sql = 'REPLACE INTO new_bkmark (url, resumepoint) VALUES(?,?)'
-        self.__execute(sql, (url,offset))
+    def set_bookmark(self, slug, offset, season='', episode=''):
+        if not slug: return
+        sql = 'REPLACE INTO bookmark (slug, season, episode, resumepoint) VALUES(?, ?, ?,?)'
+        self.__execute(sql, (slug, season, episode, offset))
         
-    def clear_bookmark(self, url):
-        if not url: return
-        sql = 'DELETE FROM new_bkmark WHERE url=?'
-        self.__execute(sql, (url,))
+    def clear_bookmark(self, slug, season='', episode=''):
+        if not slug: return
+        sql = 'DELETE FROM bookmark WHERE slug=? and season=? and episode=?'
+        self.__execute(sql, (slug, season, episode))
     
     def cache_url(self,url,body):
         now = time.time()
         sql = 'REPLACE INTO url_cache (url,response,timestamp) VALUES(?, ?, ?)'
         self.__execute(sql, (url, body, now))
+    
+    def delete_cached_url(self, url):
+        sql = 'DELETE FROM url_cache WHERE url = ?'
+        self.__execute(sql, (url,))
     
     def get_cached_url(self, url, cache_limit=8):
         html=''
@@ -117,6 +118,14 @@ class DB_Connection():
             if age < limit:
                 html=rows[0][1]
         return created, html
+    
+    def get_all_urls(self, include_response=False, order_matters=False):
+        sql = 'SELECT url'
+        if include_response: sql += ',response'
+        sql += ' FROM url_cache'
+        if order_matters: sql += ' ORDER BY url'
+        rows = self.__execute(sql)
+        return rows
     
     def add_other_list(self, section, username, slug, name=None):
         sql = 'REPLACE INTO other_lists (section, username, slug, name) VALUES (?, ?, ?, ?)'
@@ -214,6 +223,10 @@ class DB_Connection():
                 f.write(CSV_MARKERS.SAVED_SEARCHES+'\n')
                 for sub in self.get_all_searches():
                     writer.writerow(sub)
+            if self.__table_exists('bookmark'):
+                f.write(CSV_MARKERS.BOOKMARKS+'\n')
+                for sub in self.get_bookmarks():
+                    writer.writerow(sub)
         
         log_utils.log('Copying export file from: |%s| to |%s|' %(temp_path, full_path), xbmc.LOGDEBUG)
         if not xbmcvfs.copy(temp_path, full_path):
@@ -245,7 +258,7 @@ class DB_Connection():
                         progress.update(i*100/num_lines, line3='Importing %s of %s' % (i, num_lines))
                         if progress.iscanceled():
                             return
-                        if line[0] in [CSV_MARKERS.REL_URL, CSV_MARKERS.OTHER_LISTS, CSV_MARKERS.SAVED_SEARCHES]:
+                        if line[0] in [CSV_MARKERS.REL_URL, CSV_MARKERS.OTHER_LISTS, CSV_MARKERS.SAVED_SEARCHES, CSV_MARKERS.BOOKMARKS]:
                             mode=line[0]
                             continue
                         elif mode==CSV_MARKERS.REL_URL:
@@ -255,6 +268,8 @@ class DB_Connection():
                             self.add_other_list(line[0], line[1], line[2], name)
                         elif mode==CSV_MARKERS.SAVED_SEARCHES:
                             self.save_search(line[1], line[3], line[2]) # column order is different than method order
+                        elif mode==CSV_MARKERS.BOOKMARKS:
+                            self.set_bookmark(line[0], line[3], line[1], line[2])
                         else:
                             raise Exception('CSV line found while in no mode')
                         i += 1
@@ -291,6 +306,8 @@ class DB_Connection():
             PRIMARY KEY(section, username, slug))')
             self.__execute('CREATE TABLE IF NOT EXISTS saved_searches (id INTEGER NOT NULL AUTO_INCREMENT, section VARCHAR(10) NOT NULL, added DOUBLE NOT NULL,query VARCHAR(255) NOT NULL, \
             PRIMARY KEY(id))')
+            self.__execute('CREATE TABLE IF NOT EXISTS bookmark (slug VARCHAR(255) NOT NULL, season VARCHAR(5) NOT NULL, episode VARCHAR(5) NOT NULL, resumepoint DOUBLE NOT NULL, \
+            PRIMARY KEY(slug, season, episode))')
         else:
             self.__create_sqlite_db()
             self.__execute('CREATE TABLE IF NOT EXISTS url_cache (url VARCHAR(255) NOT NULL, response, timestamp, PRIMARY KEY(url))')
@@ -300,6 +317,8 @@ class DB_Connection():
             PRIMARY KEY(video_type, title, year, season, episode, source))')
             self.__execute('CREATE TABLE IF NOT EXISTS other_lists (section TEXT NOT NULL, username TEXT NOT NULL, slug TEXT NOT NULL, name TEXT, PRIMARY KEY(section, username, slug))')
             self.__execute('CREATE TABLE IF NOT EXISTS saved_searches (id INTEGER PRIMARY KEY, section TEXT NOT NULL, added DOUBLE NOT NULL,query TEXT NOT NULL)')
+            self.__execute('CREATE TABLE IF NOT EXISTS bookmark (slug TEXT NOT NULL, season TEXT NOT NULL, episode TEXT NOT NULL, resumepoint DOUBLE NOT NULL, \
+            PRIMARY KEY(slug, season, episode))')
                 
         # reload the previously saved backup export
         if db_version is not None and cur_version !=  db_version:
@@ -393,6 +412,7 @@ class DB_Connection():
             else:
                 self.db = db_lib.connect(self.db_path)
                 self.db.text_factory = str
+                self.__execute('PRAGMA journal_mode=WAL')
 
     # apply formatting changes to make sql work with a particular db driver
     def __format(self, sql):

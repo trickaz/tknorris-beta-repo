@@ -1,7 +1,7 @@
 __all__ = ['scraper', 'local_scraper', 'pw_scraper', 'uflix_scraper', 'watchseries_scraper', 'movie25_scraper', 'merdb_scraper', '2movies_scraper', 'icefilms_scraper', 'afdah_scraper', 
            'istreamhd_scraper', 'movieshd_scraper', 'simplymovies_scraper', 'yifytv_scraper', 'viooz_scraper', 'filmstreaming_scraper', 'allucto_scraper', 'onlinemovies_scraper',
            'oneclick_scraper', 'myvideolinks_scraper', 'filmikz_scraper', 'iwatch_scraper', 'popcornered_scraper', 'shush_scraper', 'ororotv_scraper', 'view47_scraper', 'vidics_scraper',
-           'oneclickwatch_scraper', 'watchmovies_scraper', 'losmovies_scraper', 'movie4k_scraper', 'noobroom_scraper']
+           'oneclickwatch_scraper', 'watchmovies_scraper', 'losmovies_scraper', 'movie4k_scraper', 'noobroom_scraper', 'solar_scraper']
 
 import re
 import os
@@ -26,6 +26,19 @@ class ScraperVideo:
     def __str__(self):
         return '|%s|%s|%s|%s|%s|%s|' % (self.video_type, self.title, self.year, self.season, self.episode, self.ep_title)
 
+def update_xml(xml, new_settings, cat_count):
+    new_settings.insert(0,'<category label="Scrapers %s">' % (cat_count))
+    new_settings.append('    </category>')
+    new_str = '\n'.join(new_settings)
+    match = re.search('(<category label="Scrapers %s">.*?</category>)' % (cat_count), xml, re.DOTALL | re.I)
+    if match:
+        old_settings=match.group(1)
+        if old_settings != new_settings:
+            xml=xml.replace(old_settings, new_str)
+    else:
+        log_utils.log('Unable to match category: %s' % (cat_count), xbmc.LOGWARNING) 
+    return xml
+
 def update_settings():
     path=xbmcaddon.Addon().getAddonInfo('path')
     full_path = os.path.join(path, 'resources', 'settings.xml')
@@ -34,36 +47,29 @@ def update_settings():
             xml=f.read()
     except:
         raise
-    
-    match = re.search('(<category label="Scrapers">.*?</category>.*?)<category', xml, re.DOTALL | re.I)
-    if match:
-        old_settings=match.group(1)
         
-        new_settings = '<category label="Scrapers">\n'
-        classes=scraper.Scraper.__class__.__subclasses__(scraper.Scraper)
-        hidden_settings=''
-        visible_settings=''
-        for cls in classes:
-            for setting in cls.get_settings():
-                if 'visible="false"' in setting:
-                    hidden_settings += setting + '\n'
-                else:
-                    visible_settings += setting + '\n'
-        new_settings += visible_settings
-        new_settings += '    </category>\n'
-        new_settings += hidden_settings
-        new_settings += '\n\t'
+    new_settings = []
+    cat_count = 1
+    old_xml = xml
+    classes=scraper.Scraper.__class__.__subclasses__(scraper.Scraper)
+    for cls in classes:
+        new_settings += cls.get_settings()
             
-        if old_settings != new_settings:
-            xml=xml.replace(old_settings, new_settings)
-            try:
-                with open(full_path, 'w') as f:
-                    f.write(xml)
-            except:
-                raise
-        else:
-            log_utils.log('No Settings Update Needed', xbmc.LOGDEBUG)
+        if len(new_settings)>90:
+            xml = update_xml(xml, new_settings, cat_count)
+            new_settings=[]
+            cat_count += 1
+
+    if new_settings:
+        xml = update_xml(xml, new_settings, cat_count)
+        
+    if xml != old_xml:
+        try:
+            with open(full_path, 'w') as f:
+                f.write(xml)
+        except:
+            raise
     else:
-        log_utils.log('Failed to match scraper category in settings.xml', xbmc.LOGWARNING)
+        log_utils.log('No Settings Update Needed', xbmc.LOGDEBUG)
 
 update_settings()

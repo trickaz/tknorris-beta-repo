@@ -700,3 +700,16 @@ def get_current_view():
         views = match.group(1)
         for view in views.split(','):
             if xbmc.getInfoLabel('Control.GetLabel(%s)' % (view)): return view
+
+# returns true if user chooses to resume, else false
+def get_resume_choice(slug, season, episode):
+    question = 'Resume from %s' % (format_time(db_connection.get_bookmark(slug, season, episode)))
+    return xbmcgui.Dialog().yesno('Resume?', question, '', '', 'Start from beginning', 'Resume')==1
+
+def format_time(seconds):
+    minutes, seconds = divmod(seconds, 60)
+    if minutes > 60:
+        hours, minutes = divmod(minutes, 60)
+        return "%02d:%02d:%02d" % (hours, minutes, seconds)
+    else:
+        return "%02d:%02d" % (minutes, seconds)

@@ -1,3 +1,16 @@
+[B]Version 0.0.30[/B]
+- Add solarmovie scraper
+- Added resume bookmark code
+- Set sqlite journal mode to WAL
+- Add new set default view method
+- Add way to delete individual cached urls
+- Add pseudotv detection to force auto-play
+- Alluc.to scraper fixes
+- Fix losmovies links
+- Small noobroom scraper fix
+- uflix.org scraper fixes
+- Improve settings.xml code to allow multiple scraper pages
+  
 [B]Version 0.0.29[/B]
 - Fix friends activity
 - Add noobroom scraper

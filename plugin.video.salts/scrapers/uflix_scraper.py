@@ -76,7 +76,7 @@ class UFlix_Scraper(scraper.Scraper):
     
                 up=int(up)
                 down=int(down)
-                source = {'multi-part': False, 'url': url, 'host': host, 'class': self, 'quality': quality, 'up': up, 'down': down, 'direct': False}
+                source = {'multi-part': False, 'url': url, 'host': host.lower(), 'class': self, 'quality': quality, 'up': up, 'down': down, 'direct': False}
                 rating=up*100/(up+down) if (up>0 or down>0) else None
                 source['rating']=rating
                 source['views']=up+down

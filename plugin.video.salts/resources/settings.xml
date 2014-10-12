@@ -98,77 +98,152 @@
 		<setting id="toggle_enable" type="bool" label="Enable/Disable Check" default="false" enable="false" visible="false"/>
 	</category>
 	
-	<category label="Scrapers">
+	<category label="Scrapers 1">
          <setting id="Local-enable" type="bool" label="Local Enabled" default="true" visible="true"/>
          <setting id="Local-base_url" type="text" label="     Base Url" default="" visible="eq(-1,true)"/>
          <setting id="Local-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
+         <setting id="Local_try" type="number" default="0" visible="false"/>
+         <setting id="Local_fail" type="number" default="0" visible="false"/>
+         <setting id="Local_check" type="number" default="0" visible="false"/>
          <setting id="PrimeWire-enable" type="bool" label="PrimeWire Enabled" default="true" visible="true"/>
          <setting id="PrimeWire-base_url" type="text" label="     Base Url" default="http://www.primewire.ag" visible="eq(-1,true)"/>
          <setting id="PrimeWire-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
+         <setting id="PrimeWire_try" type="number" default="0" visible="false"/>
+         <setting id="PrimeWire_fail" type="number" default="0" visible="false"/>
+         <setting id="PrimeWire_check" type="number" default="0" visible="false"/>
          <setting id="UFlix.org-enable" type="bool" label="UFlix.org Enabled" default="true" visible="true"/>
          <setting id="UFlix.org-base_url" type="text" label="     Base Url" default="http://uflix.org" visible="eq(-1,true)"/>
          <setting id="UFlix.org-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
+         <setting id="UFlix.org_try" type="number" default="0" visible="false"/>
+         <setting id="UFlix.org_fail" type="number" default="0" visible="false"/>
+         <setting id="UFlix.org_check" type="number" default="0" visible="false"/>
          <setting id="WatchSeries-enable" type="bool" label="WatchSeries Enabled" default="true" visible="true"/>
          <setting id="WatchSeries-base_url" type="text" label="     Base Url" default="http://watchseries.sx" visible="eq(-1,true)"/>
+         <setting id="WatchSeries-sub_check" type="bool" label="     Include in Page Existence checks?" default="false" visible="eq(-2,true)"/>
+         <setting id="WatchSeries_try" type="number" default="0" visible="false"/>
+         <setting id="WatchSeries_fail" type="number" default="0" visible="false"/>
+         <setting id="WatchSeries_check" type="number" default="0" visible="false"/>
          <setting id="movie25-enable" type="bool" label="movie25 Enabled" default="true" visible="true"/>
          <setting id="movie25-base_url" type="text" label="     Base Url" default="http://movie25.cm" visible="eq(-1,true)"/>
          <setting id="movie25-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
+         <setting id="movie25_try" type="number" default="0" visible="false"/>
+         <setting id="movie25_fail" type="number" default="0" visible="false"/>
+         <setting id="movie25_check" type="number" default="0" visible="false"/>
          <setting id="MerDB-enable" type="bool" label="MerDB Enabled" default="true" visible="true"/>
          <setting id="MerDB-base_url" type="text" label="     Base Url" default="http://merdb.cn" visible="eq(-1,true)"/>
          <setting id="MerDB-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
+         <setting id="MerDB_try" type="number" default="0" visible="false"/>
+         <setting id="MerDB_fail" type="number" default="0" visible="false"/>
+         <setting id="MerDB_check" type="number" default="0" visible="false"/>
          <setting id="2movies-enable" type="bool" label="2movies Enabled" default="true" visible="true"/>
          <setting id="2movies-base_url" type="text" label="     Base Url" default="http://twomovies.us" visible="eq(-1,true)"/>
          <setting id="2movies-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
+         <setting id="2movies_try" type="number" default="0" visible="false"/>
+         <setting id="2movies_fail" type="number" default="0" visible="false"/>
+         <setting id="2movies_check" type="number" default="0" visible="false"/>
          <setting id="IceFilms-enable" type="bool" label="IceFilms Enabled" default="true" visible="true"/>
          <setting id="IceFilms-base_url" type="text" label="     Base Url" default="http://www.icefilms.info" visible="eq(-1,true)"/>
          <setting id="IceFilms-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
+         <setting id="IceFilms_try" type="number" default="0" visible="false"/>
+         <setting id="IceFilms_fail" type="number" default="0" visible="false"/>
+         <setting id="IceFilms_check" type="number" default="0" visible="false"/>
          <setting id="afdah-enable" type="bool" label="afdah Enabled" default="true" visible="true"/>
          <setting id="afdah-base_url" type="text" label="     Base Url" default="http://afdah.com" visible="eq(-1,true)"/>
          <setting id="afdah-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
+         <setting id="afdah_try" type="number" default="0" visible="false"/>
+         <setting id="afdah_fail" type="number" default="0" visible="false"/>
+         <setting id="afdah_check" type="number" default="0" visible="false"/>
          <setting id="iStreamHD-enable" type="bool" label="iStreamHD Enabled" default="true" visible="true"/>
          <setting id="iStreamHD-base_url" type="text" label="     Base Url" default="http://istreamhd.org" visible="eq(-1,true)"/>
-         <setting id="iStreamHD-username" type="text" label="     Username" default="" visible="eq(-2,true)"/>
-         <setting id="iStreamHD-password" type="text" label="     Password" option="hidden" default="" visible="eq(-3,true)"/>
+         <setting id="iStreamHD-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
+         <setting id="iStreamHD_try" type="number" default="0" visible="false"/>
+         <setting id="iStreamHD_fail" type="number" default="0" visible="false"/>
+         <setting id="iStreamHD_check" type="number" default="0" visible="false"/>
+         <setting id="iStreamHD-username" type="text" label="     Username" default="" visible="eq(-6,true)"/>
+         <setting id="iStreamHD-password" type="text" label="     Password" option="hidden" default="" visible="eq(-7,true)"/>
          <setting id="MoviesHD-enable" type="bool" label="MoviesHD Enabled" default="true" visible="true"/>
          <setting id="MoviesHD-base_url" type="text" label="     Base Url" default="http://movieshd.co" visible="eq(-1,true)"/>
          <setting id="MoviesHD-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
+         <setting id="MoviesHD_try" type="number" default="0" visible="false"/>
+         <setting id="MoviesHD_fail" type="number" default="0" visible="false"/>
+         <setting id="MoviesHD_check" type="number" default="0" visible="false"/>
          <setting id="SimplyMovies-enable" type="bool" label="SimplyMovies Enabled" default="true" visible="true"/>
          <setting id="SimplyMovies-base_url" type="text" label="     Base Url" default="http://www.simplymovies.net" visible="eq(-1,true)"/>
          <setting id="SimplyMovies-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
+         <setting id="SimplyMovies_try" type="number" default="0" visible="false"/>
+         <setting id="SimplyMovies_fail" type="number" default="0" visible="false"/>
+         <setting id="SimplyMovies_check" type="number" default="0" visible="false"/>
          <setting id="yify.tv-enable" type="bool" label="yify.tv Enabled" default="true" visible="true"/>
          <setting id="yify.tv-base_url" type="text" label="     Base Url" default="http://yify.tv" visible="eq(-1,true)"/>
          <setting id="yify.tv-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
+         <setting id="yify.tv_try" type="number" default="0" visible="false"/>
+         <setting id="yify.tv_fail" type="number" default="0" visible="false"/>
+         <setting id="yify.tv_check" type="number" default="0" visible="false"/>
          <setting id="viooz.ac-enable" type="bool" label="viooz.ac Enabled" default="true" visible="true"/>
          <setting id="viooz.ac-base_url" type="text" label="     Base Url" default="http://viooz.ac" visible="eq(-1,true)"/>
          <setting id="viooz.ac-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
+         <setting id="viooz.ac_try" type="number" default="0" visible="false"/>
+         <setting id="viooz.ac_fail" type="number" default="0" visible="false"/>
+         <setting id="viooz.ac_check" type="number" default="0" visible="false"/>
          <setting id="FilmStreaming.in-enable" type="bool" label="FilmStreaming.in Enabled" default="true" visible="true"/>
          <setting id="FilmStreaming.in-base_url" type="text" label="     Base Url" default="http://film-streaming.in" visible="eq(-1,true)"/>
          <setting id="FilmStreaming.in-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
+         <setting id="FilmStreaming.in_try" type="number" default="0" visible="false"/>
+         <setting id="FilmStreaming.in_fail" type="number" default="0" visible="false"/>
+         <setting id="FilmStreaming.in_check" type="number" default="0" visible="false"/>
+    </category>
+
+	<category label="Scrapers 2">
          <setting id="Alluc.to-enable" type="bool" label="Alluc.to Enabled" default="true" visible="true"/>
          <setting id="Alluc.to-base_url" type="text" label="     Base Url" default="http://dir.alluc.to" visible="eq(-1,true)"/>
          <setting id="Alluc.to-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
+         <setting id="Alluc.to_try" type="number" default="0" visible="false"/>
+         <setting id="Alluc.to_fail" type="number" default="0" visible="false"/>
+         <setting id="Alluc.to_check" type="number" default="0" visible="false"/>
          <setting id="OnlineMovies-enable" type="bool" label="OnlineMovies Enabled" default="true" visible="true"/>
          <setting id="OnlineMovies-base_url" type="text" label="     Base Url" default="http://onlinemovies.pro" visible="eq(-1,true)"/>
          <setting id="OnlineMovies-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
+         <setting id="OnlineMovies_try" type="number" default="0" visible="false"/>
+         <setting id="OnlineMovies_fail" type="number" default="0" visible="false"/>
+         <setting id="OnlineMovies_check" type="number" default="0" visible="false"/>
          <setting id="OneClickMoviez-enable" type="bool" label="OneClickMoviez Enabled" default="true" visible="true"/>
          <setting id="OneClickMoviez-base_url" type="text" label="     Base Url" default="http://www.oneclickmoviez.ag" visible="eq(-1,true)"/>
          <setting id="OneClickMoviez-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
+         <setting id="OneClickMoviez_try" type="number" default="0" visible="false"/>
+         <setting id="OneClickMoviez_fail" type="number" default="0" visible="false"/>
+         <setting id="OneClickMoviez_check" type="number" default="0" visible="false"/>
          <setting id="MyVideoLinks.eu-enable" type="bool" label="MyVideoLinks.eu Enabled" default="true" visible="true"/>
          <setting id="MyVideoLinks.eu-base_url" type="text" label="     Base Url" default="http://myvideolinks.eu" visible="eq(-1,true)"/>
-         <setting id="MyVideoLinks.eu-filter" type="slider" range="0,180" option="int" label="     Filter results older than (0=No Filter) (days)" default="30" visible="eq(-3,true)"/>
-         <setting id="MyVideoLinks.eu-select" type="enum" label="     Automatically Select (Movies only)" values="Most Recent|Highest Quality" default="0" visible="eq(-4,true)"/>
+         <setting id="MyVideoLinks.eu-sub_check" type="bool" label="     Include in Page Existence checks?" default="false" visible="eq(-2,true)"/>
+         <setting id="MyVideoLinks.eu_try" type="number" default="0" visible="false"/>
+         <setting id="MyVideoLinks.eu_fail" type="number" default="0" visible="false"/>
+         <setting id="MyVideoLinks.eu_check" type="number" default="0" visible="false"/>
+         <setting id="MyVideoLinks.eu-filter" type="slider" range="0,180" option="int" label="     Filter results older than (0=No Filter) (days)" default="30" visible="eq(-6,true)"/>
+         <setting id="MyVideoLinks.eu-select" type="enum" label="     Automatically Select (Movies only)" values="Most Recent|Highest Quality" default="0" visible="eq(-7,true)"/>
          <setting id="filmikz.ch-enable" type="bool" label="filmikz.ch Enabled" default="true" visible="true"/>
          <setting id="filmikz.ch-base_url" type="text" label="     Base Url" default="http://filmikz.ch" visible="eq(-1,true)"/>
          <setting id="filmikz.ch-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
+         <setting id="filmikz.ch_try" type="number" default="0" visible="false"/>
+         <setting id="filmikz.ch_fail" type="number" default="0" visible="false"/>
+         <setting id="filmikz.ch_check" type="number" default="0" visible="false"/>
          <setting id="iWatchOnline-enable" type="bool" label="iWatchOnline Enabled" default="true" visible="true"/>
          <setting id="iWatchOnline-base_url" type="text" label="     Base Url" default="http://www.iwatchonline.to" visible="eq(-1,true)"/>
          <setting id="iWatchOnline-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
+         <setting id="iWatchOnline_try" type="number" default="0" visible="false"/>
+         <setting id="iWatchOnline_fail" type="number" default="0" visible="false"/>
+         <setting id="iWatchOnline_check" type="number" default="0" visible="false"/>
          <setting id="popcornered-enable" type="bool" label="popcornered Enabled" default="true" visible="true"/>
          <setting id="popcornered-base_url" type="text" label="     Base Url" default="http://popcornered.com" visible="eq(-1,true)"/>
          <setting id="popcornered-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
+         <setting id="popcornered_try" type="number" default="0" visible="false"/>
+         <setting id="popcornered_fail" type="number" default="0" visible="false"/>
+         <setting id="popcornered_check" type="number" default="0" visible="false"/>
          <setting id="Shush.se-enable" type="bool" label="Shush.se Enabled" default="true" visible="true"/>
          <setting id="Shush.se-base_url" type="text" label="     Base Url" default="http://shush.se" visible="eq(-1,true)"/>
          <setting id="Shush.se-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
+         <setting id="Shush.se_try" type="number" default="0" visible="false"/>
+         <setting id="Shush.se_fail" type="number" default="0" visible="false"/>
+         <setting id="Shush.se_check" type="number" default="0" visible="false"/>
          <setting id="ororo.tv-enable" type="bool" label="ororo.tv Enabled" default="true" visible="true"/>
          <setting id="ororo.tv-base_url" type="text" label="     Base Url" default="http://ororo.tv" visible="eq(-1,true)"/>
          <setting id="ororo.tv-username" type="text" label="     Username" default="" visible="eq(-2,true)"/>
@@ -177,118 +252,74 @@
          <setting id="view47-enable" type="bool" label="view47 Enabled" default="true" visible="true"/>
          <setting id="view47-base_url" type="text" label="     Base Url" default="http://www.view47.com" visible="eq(-1,true)"/>
          <setting id="view47-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
-         <setting id="vidics.ch-enable" type="bool" label="vidics.ch Enabled" default="true" visible="true"/>
-         <setting id="vidics.ch-base_url" type="text" label="     Base Url" default="http://www.vidics.ch" visible="eq(-1,true)"/>
-         <setting id="vidics.ch-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
-         <setting id="OneClickWatch-enable" type="bool" label="OneClickWatch Enabled" default="true" visible="true"/>
-         <setting id="OneClickWatch-base_url" type="text" label="     Base Url" default="http://oneclickwatch.org" visible="eq(-1,true)"/>
-         <setting id="OneClickWatch-filter" type="slider" range="0,180" option="int" label="     Filter results older than (0=No Filter) (days)" default="30" visible="eq(-3,true)"/>
-         <setting id="OneClickWatch-select" type="enum" label="     Automatically Select (Movies only)" values="Most Recent|Highest Quality" default="0" visible="eq(-4,true)"/>
-         <setting id="WatchMovies-enable" type="bool" label="WatchMovies Enabled" default="true" visible="true"/>
-         <setting id="WatchMovies-base_url" type="text" label="     Base Url" default="http://watchmovies.to" visible="eq(-1,true)"/>
-         <setting id="WatchMovies-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
-         <setting id="LosMovies-enable" type="bool" label="LosMovies Enabled" default="true" visible="true"/>
-         <setting id="LosMovies-base_url" type="text" label="     Base Url" default="http://losmovies.tv" visible="eq(-1,true)"/>
-         <setting id="LosMovies-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
-         <setting id="Movie4K-enable" type="bool" label="Movie4K Enabled" default="true" visible="true"/>
-         <setting id="Movie4K-base_url" type="text" label="     Base Url" default="http://www.movie4k.to" visible="eq(-1,true)"/>
-         <setting id="Movie4K-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
-         <setting id="NoobRoom-enable" type="bool" label="NoobRoom Enabled" default="true" visible="true"/>
-         <setting id="NoobRoom-base_url" type="text" label="     Base Url" default="http://superchillin.com" visible="eq(-1,true)"/>
-         <setting id="NoobRoom-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
-         <setting id="NoobRoom-username" type="text" label="     Username" default="" visible="eq(-3,true)"/>
-         <setting id="NoobRoom-password" type="text" label="     Password" option="hidden" default="" visible="eq(-4,true)"/>
-         <setting id="NoobRoom-include_premium" type="bool" label="     Include Premium" default="false" visible="eq(-5,true)"/>
-    </category>
-         <setting id="Local_try" type="number" default="0" visible="false"/>
-         <setting id="Local_fail" type="number" default="0" visible="false"/>
-         <setting id="Local_check" type="number" default="0" visible="false"/>
-         <setting id="PrimeWire_try" type="number" default="0" visible="false"/>
-         <setting id="PrimeWire_fail" type="number" default="0" visible="false"/>
-         <setting id="PrimeWire_check" type="number" default="0" visible="false"/>
-         <setting id="UFlix.org_try" type="number" default="0" visible="false"/>
-         <setting id="UFlix.org_fail" type="number" default="0" visible="false"/>
-         <setting id="UFlix.org_check" type="number" default="0" visible="false"/>
-         <setting id="WatchSeries_try" type="number" default="0" visible="false"/>
-         <setting id="WatchSeries_fail" type="number" default="0" visible="false"/>
-         <setting id="WatchSeries_check" type="number" default="0" visible="false"/>
-         <setting id="movie25_try" type="number" default="0" visible="false"/>
-         <setting id="movie25_fail" type="number" default="0" visible="false"/>
-         <setting id="movie25_check" type="number" default="0" visible="false"/>
-         <setting id="MerDB_try" type="number" default="0" visible="false"/>
-         <setting id="MerDB_fail" type="number" default="0" visible="false"/>
-         <setting id="MerDB_check" type="number" default="0" visible="false"/>
-         <setting id="2movies_try" type="number" default="0" visible="false"/>
-         <setting id="2movies_fail" type="number" default="0" visible="false"/>
-         <setting id="2movies_check" type="number" default="0" visible="false"/>
-         <setting id="IceFilms_try" type="number" default="0" visible="false"/>
-         <setting id="IceFilms_fail" type="number" default="0" visible="false"/>
-         <setting id="IceFilms_check" type="number" default="0" visible="false"/>
-         <setting id="afdah_try" type="number" default="0" visible="false"/>
-         <setting id="afdah_fail" type="number" default="0" visible="false"/>
-         <setting id="afdah_check" type="number" default="0" visible="false"/>
-         <setting id="MoviesHD_try" type="number" default="0" visible="false"/>
-         <setting id="MoviesHD_fail" type="number" default="0" visible="false"/>
-         <setting id="MoviesHD_check" type="number" default="0" visible="false"/>
-         <setting id="SimplyMovies_try" type="number" default="0" visible="false"/>
-         <setting id="SimplyMovies_fail" type="number" default="0" visible="false"/>
-         <setting id="SimplyMovies_check" type="number" default="0" visible="false"/>
-         <setting id="yify.tv_try" type="number" default="0" visible="false"/>
-         <setting id="yify.tv_fail" type="number" default="0" visible="false"/>
-         <setting id="yify.tv_check" type="number" default="0" visible="false"/>
-         <setting id="viooz.ac_try" type="number" default="0" visible="false"/>
-         <setting id="viooz.ac_fail" type="number" default="0" visible="false"/>
-         <setting id="viooz.ac_check" type="number" default="0" visible="false"/>
-         <setting id="FilmStreaming.in_try" type="number" default="0" visible="false"/>
-         <setting id="FilmStreaming.in_fail" type="number" default="0" visible="false"/>
-         <setting id="FilmStreaming.in_check" type="number" default="0" visible="false"/>
-         <setting id="Alluc.to_try" type="number" default="0" visible="false"/>
-         <setting id="Alluc.to_fail" type="number" default="0" visible="false"/>
-         <setting id="Alluc.to_check" type="number" default="0" visible="false"/>
-         <setting id="OnlineMovies_try" type="number" default="0" visible="false"/>
-         <setting id="OnlineMovies_fail" type="number" default="0" visible="false"/>
-         <setting id="OnlineMovies_check" type="number" default="0" visible="false"/>
-         <setting id="OneClickMoviez_try" type="number" default="0" visible="false"/>
-         <setting id="OneClickMoviez_fail" type="number" default="0" visible="false"/>
-         <setting id="OneClickMoviez_check" type="number" default="0" visible="false"/>
-         <setting id="MyVideoLinks.eu_try" type="number" default="0" visible="false"/>
-         <setting id="MyVideoLinks.eu_fail" type="number" default="0" visible="false"/>
-         <setting id="MyVideoLinks.eu_check" type="number" default="0" visible="false"/>
-         <setting id="filmikz.ch_try" type="number" default="0" visible="false"/>
-         <setting id="filmikz.ch_fail" type="number" default="0" visible="false"/>
-         <setting id="filmikz.ch_check" type="number" default="0" visible="false"/>
-         <setting id="iWatchOnline_try" type="number" default="0" visible="false"/>
-         <setting id="iWatchOnline_fail" type="number" default="0" visible="false"/>
-         <setting id="iWatchOnline_check" type="number" default="0" visible="false"/>
-         <setting id="popcornered_try" type="number" default="0" visible="false"/>
-         <setting id="popcornered_fail" type="number" default="0" visible="false"/>
-         <setting id="popcornered_check" type="number" default="0" visible="false"/>
-         <setting id="Shush.se_try" type="number" default="0" visible="false"/>
-         <setting id="Shush.se_fail" type="number" default="0" visible="false"/>
-         <setting id="Shush.se_check" type="number" default="0" visible="false"/>
          <setting id="view47_try" type="number" default="0" visible="false"/>
          <setting id="view47_fail" type="number" default="0" visible="false"/>
          <setting id="view47_check" type="number" default="0" visible="false"/>
+         <setting id="vidics.ch-enable" type="bool" label="vidics.ch Enabled" default="true" visible="true"/>
+         <setting id="vidics.ch-base_url" type="text" label="     Base Url" default="http://www.vidics.ch" visible="eq(-1,true)"/>
+         <setting id="vidics.ch-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
          <setting id="vidics.ch_try" type="number" default="0" visible="false"/>
          <setting id="vidics.ch_fail" type="number" default="0" visible="false"/>
          <setting id="vidics.ch_check" type="number" default="0" visible="false"/>
+         <setting id="OneClickWatch-enable" type="bool" label="OneClickWatch Enabled" default="true" visible="true"/>
+         <setting id="OneClickWatch-base_url" type="text" label="     Base Url" default="http://oneclickwatch.org" visible="eq(-1,true)"/>
+         <setting id="OneClickWatch-sub_check" type="bool" label="     Include in Page Existence checks?" default="false" visible="eq(-2,true)"/>
          <setting id="OneClickWatch_try" type="number" default="0" visible="false"/>
          <setting id="OneClickWatch_fail" type="number" default="0" visible="false"/>
          <setting id="OneClickWatch_check" type="number" default="0" visible="false"/>
+         <setting id="OneClickWatch-filter" type="slider" range="0,180" option="int" label="     Filter results older than (0=No Filter) (days)" default="30" visible="eq(-6,true)"/>
+         <setting id="OneClickWatch-select" type="enum" label="     Automatically Select (Movies only)" values="Most Recent|Highest Quality" default="0" visible="eq(-7,true)"/>
+         <setting id="WatchMovies-enable" type="bool" label="WatchMovies Enabled" default="true" visible="true"/>
+         <setting id="WatchMovies-base_url" type="text" label="     Base Url" default="http://watchmovies.to" visible="eq(-1,true)"/>
+         <setting id="WatchMovies-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
          <setting id="WatchMovies_try" type="number" default="0" visible="false"/>
          <setting id="WatchMovies_fail" type="number" default="0" visible="false"/>
          <setting id="WatchMovies_check" type="number" default="0" visible="false"/>
+         <setting id="LosMovies-enable" type="bool" label="LosMovies Enabled" default="true" visible="true"/>
+         <setting id="LosMovies-base_url" type="text" label="     Base Url" default="http://losmovies.tv" visible="eq(-1,true)"/>
+         <setting id="LosMovies-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
          <setting id="LosMovies_try" type="number" default="0" visible="false"/>
          <setting id="LosMovies_fail" type="number" default="0" visible="false"/>
          <setting id="LosMovies_check" type="number" default="0" visible="false"/>
+         <setting id="Movie4K-enable" type="bool" label="Movie4K Enabled" default="true" visible="true"/>
+         <setting id="Movie4K-base_url" type="text" label="     Base Url" default="http://www.movie4k.to" visible="eq(-1,true)"/>
+         <setting id="Movie4K-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
          <setting id="Movie4K_try" type="number" default="0" visible="false"/>
          <setting id="Movie4K_fail" type="number" default="0" visible="false"/>
          <setting id="Movie4K_check" type="number" default="0" visible="false"/>
+    </category>
+
+	<category label="Scrapers 3">
+         <setting id="NoobRoom-enable" type="bool" label="NoobRoom Enabled" default="true" visible="true"/>
+         <setting id="NoobRoom-base_url" type="text" label="     Base Url" default="http://superchillin.com" visible="eq(-1,true)"/>
+         <setting id="NoobRoom-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
          <setting id="NoobRoom_try" type="number" default="0" visible="false"/>
          <setting id="NoobRoom_fail" type="number" default="0" visible="false"/>
          <setting id="NoobRoom_check" type="number" default="0" visible="false"/>
-
-	<category label="Database">
+         <setting id="NoobRoom-username" type="text" label="     Username" default="" visible="eq(-6,true)"/>
+         <setting id="NoobRoom-password" type="text" label="     Password" option="hidden" default="" visible="eq(-7,true)"/>
+         <setting id="NoobRoom-include_premium" type="bool" label="     Include Premium" default="false" visible="eq(-8,true)"/>
+         <setting id="SolarMovie-enable" type="bool" label="SolarMovie Enabled" default="true" visible="true"/>
+         <setting id="SolarMovie-base_url" type="text" label="     Base Url" default="http://www.solarmovie.is" visible="eq(-1,true)"/>
+         <setting id="SolarMovie-sub_check" type="bool" label="     Include in Page Existence checks?" default="true" visible="eq(-2,true)"/>
+         <setting id="SolarMovie_try" type="number" default="0" visible="false"/>
+         <setting id="SolarMovie_fail" type="number" default="0" visible="false"/>
+         <setting id="SolarMovie_check" type="number" default="0" visible="false"/>
+    </category>
+	
+    <category label="Subtitles">
+    	<setting type="lsep" label="Subtitles work only for TV Shows currently"/>
+    	<setting id="enable-subtitles" type="bool" label="Enable Subtitles" default="false"/>
+		<setting id="subtitle-indicator" type="bool" label="Show subtitle indicators" default="true" enable="eq(-1,true)"/>
+    	<setting id="subtitle-lang" type="text" label="Subtitle Language" default="English" enable="eq(-2,true)"/>
+    	<setting id="subtitle-hi" type="bool" label="Require Hearing Impaired" default="false" enable="eq(-3,true)"/>
+    	<setting id="subtitle-hd" type="bool" label="Require HD" default="false" enable="eq(-4,true)"/>
+    	<setting id="subtitle-download" type="bool" label="Download Subtitles on playback" default="true" enable="eq(-5,true)"/>
+        <setting id="subtitle-folder" type="folder" label="Subtitle Download Folder" default="special://userdata/addon_data/plugin.video.salts/Subtitles" enable="eq(-1,true)+eq(-6,true)"/>
+        <setting id="subtitle-show" type="bool" label="Show Subtitles on Playback" default="false" enable="eq(-2,true)+eq(-7,true)"/>
+    </category>
+    
+    <category label="Database">
 		<setting id="use_remote_db" type="bool" label="Use a MySQL DB" default="false"/>
         <setting id="db_address" type="text" label="    Address" enable="eq(-1,true)" visible="eq(-1,true)" default=""/>
         <setting id="db_port" type="integer" label="    Port" enable="eq(-2,true)" visible="eq(-2,true)" default=""/>

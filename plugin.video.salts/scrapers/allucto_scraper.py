@@ -78,6 +78,12 @@ class Alluc_Scraper(scraper.Scraper):
                 # extract each group
                 for match in re.finditer('class="grouphosterlabel">(.*?)\s+\(\d+\)(.*?)class="folderbtn"', container, re.DOTALL):
                     host, group = match.groups()
+                    host=host.lower()
+                    if host == 'hqstreams':
+                        continue
+                    if host == 'bestreams':
+                        host='bestreams.net'
+                    
                     # extract links in each group
                     for match2 in re.finditer('class="openlink(?: newlink)?"\s+style="[^"]+"\s+href="([^"]+).*?Hits:\s+([.\d]+).*?name="score0"\s+value="(\d+)', group, re.DOTALL):
                         url, views, rating = match2.groups()
