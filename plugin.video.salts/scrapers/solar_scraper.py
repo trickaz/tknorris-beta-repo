@@ -26,7 +26,7 @@ from salts_lib import log_utils
 from salts_lib.constants import VIDEO_TYPES
 from salts_lib.constants import QUALITIES
 
-QUALITY_MAP = {'HD': QUALITIES.HIGH, 'DVD': QUALITIES.HIGH, 'LQ DVD': QUALITIES.MEDIUM, 'CAM': QUALITIES.LOW}
+QUALITY_MAP = {'HD': QUALITIES.HIGH, 'DVD': QUALITIES.HIGH, 'TV': QUALITIES.HIGH, 'LQ DVD': QUALITIES.MEDIUM, 'CAM': QUALITIES.LOW}
 BASE_URL = 'http://www.solarmovie.is'
 
 class Solar_Scraper(scraper.Scraper):
@@ -73,7 +73,7 @@ class Solar_Scraper(scraper.Scraper):
                     url = url.replace('/show/', '/play/')
                     quality=quality.strip()
                     
-                    hoster = {'multi-part': False, 'url': url, 'host': host, 'class': self, 'quality': QUALITY_MAP[quality], 'views': None, 'rating': rating, 'direct': False}
+                    hoster = {'multi-part': False, 'url': url, 'host': host, 'class': self, 'quality': QUALITY_MAP.get(quality,QUALITIES.MEDIUM), 'views': None, 'rating': rating, 'direct': False}
                     hosters.append(hoster)
             
         return hosters

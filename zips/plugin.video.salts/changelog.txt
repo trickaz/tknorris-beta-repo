@@ -1,3 +1,10 @@
+[B]Version 0.0.31[/B]
+- solarmovie scraper fixes
+- improve myvideolinks.eu and oneclickwatch.org quality function
+- Add option to treat unknown air date as future
+- Add director and writer infolabel when available
+- Add silent trakt sync on playback stop
+
 [B]Version 0.0.30[/B]
 - Add solarmovie scraper
 - Added resume bookmark code

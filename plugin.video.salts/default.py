@@ -801,15 +801,15 @@ def play_source(hoster_url, video_type, slug, season='', episode=''):
     else:
         stream_url = hmf.resolve()
         if not stream_url or not isinstance(stream_url, basestring):
-            builtin = 'XBMC.Notification(%s,Could not Resolve Url: %s, 5000, %s)'
-            xbmc.executebuiltin(builtin % (_SALTS.get_name(), hoster_url, ICON_PATH))
+            # commenting out as it hides urlresolver notifications
+            #builtin = 'XBMC.Notification(%s,Could not Resolve Url: %s, 5000, %s)'
+            #xbmc.executebuiltin(builtin % (_SALTS.get_name(), hoster_url, ICON_PATH))
             return False
 
-    resume = False
     resume_point = 0
     if db_connection.bookmark_exists(slug, season, episode):
-        resume = utils.get_resume_choice(slug, season, episode)
-        if resume: resume_point = db_connection.get_bookmark(slug, season, episode)
+        if utils.get_resume_choice(slug, season, episode):
+            resume_point = db_connection.get_bookmark(slug, season, episode)
         
     try:
         win = xbmcgui.Window(10000)
@@ -858,6 +858,11 @@ def auto_play_sources(hosters, video_type, slug, season, episode):
         log_utils.log('Auto Playing: %s' % (hoster_url), xbmc.LOGDEBUG)
         if play_source(hoster_url, video_type, slug, season, episode):
             return True
+    else:
+        msg = 'All sources failed to play'
+        log_utils.log(msg, xbmc.LOGERROR)
+        builtin = 'XBMC.Notification(%s,%s, 5000, %s)'
+        xbmc.executebuiltin(builtin % (_SALTS.get_name(), msg, ICON_PATH))
 
 def pick_source_dialog(hosters):
     for item in hosters:
@@ -1282,6 +1287,7 @@ def add_to_library(video_type, title, year, slug):
         show = trakt_api.get_show_details(slug)
         show['title'] = re.sub(' \(\d{4}\)$','',show['title']) # strip off year if it's part of show title
         seasons = trakt_api.get_seasons(slug)
+        include_unknown = _SALTS.get_setting('include_unknown')=='true'
 
         if not seasons:
             log_utils.log('No Seasons found for %s (%s)' % (show['title'], show['year']), xbmc.LOGERROR)
@@ -1294,10 +1300,10 @@ def add_to_library(video_type, title, year, slug):
                     if utils.show_requires_source(slug):
                         require_source=True
                     else:
-                        if utils.iso_2_utc(episode['first_aired_iso'])>time.time():
-                            continue
+                        if include_unknown or (episode['first_aired_iso']!=None and utils.iso_2_utc(episode['first_aired_iso'])<=time.time()):
+                            require_source = False
                         else:
-                            require_source=False
+                            continue
                     
                     ep_num = episode['episode']
                     filename = utils.filename_from_title(show['title'], video_type)

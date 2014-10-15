@@ -82,10 +82,14 @@ class Service(xbmc.Player):
             tTime = utils.format_time(self._totalTime)
             log_utils.log('Service: Played %s of %s total = %s%%' % (pTime, tTime, percent_played), xbmc.LOGDEBUG)
             if playedTime == 0 and self._totalTime == 999999:
-                raise RuntimeError('XBMC silently failed to start playback')
+                log_utils.log('XBMC silently failed to start playback', xbmc.LOGWARNING)
             elif playedTime>0:
                 log_utils.log('Service: Setting bookmark on |%s|%s|%s| to %s seconds' % (self.slug, self.season, self.episode, playedTime), xbmc.LOGDEBUG)
                 db_connection.set_bookmark(self.slug, playedTime, self.season, self.episode)
+                if percent_played>=75:
+                    if xbmc.getCondVisibility('System.HasAddon(script.trakt)'):
+                        run = 'RunScript(script.trakt, action=sync, silent=True)'
+                        xbmc.executebuiltin(run)
             self.reset()
 
     def onPlayBackEnded(self):

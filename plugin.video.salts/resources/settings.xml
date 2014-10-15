@@ -59,6 +59,7 @@
 		<setting id="update_subs-during-playback" type="bool" label="     During Playback?" default="false" visible="eq(-3,true)"/>
 		<setting id="require_source" type="bool" label="Require Site Page for Movies?" default="true" visible="true"/>
 		<setting id="include_specials" type="bool" label="Include specials in library?" default="false" visible="true"/>
+		<setting id="include_unknown" type="bool" label="Include episodes with unknown air dates" default="true" visible="true"/>
 		<setting id="library-update" type="bool" label="Update Library Afterward?" default="false" visible="true"/>
 		<setting id="update_subs-notify" type="bool" label="Show Notifications?" default="false" visible="true"/>
 		<setting id="include_movies" type="bool" label="Include Movies?" default="false" visible="true"/>

@@ -154,6 +154,7 @@ def make_info(item, show=''):
     if 'tagline' in item: info['tagline']=item['tagline']
     if 'watched' in item and item['watched']: info['playcount']=1
     if 'plays' in item and item['plays']: info['playcount']=item['plays']
+    info.update(make_people(item))
     
     if 'ratings' in item: 
         info['rating']=int(item['ratings']['percentage'])/10.0
@@ -200,9 +201,17 @@ def make_info(item, show=''):
     if 'tvdb_id' in show: info['tvdb_id']=show['tvdb_id']
     if 'runtime' in show: info['duration']=show['runtime']
     if 'title' in show: info['tvshowtitle']=show['title']
-    if 'people' in show: info['cast']=[actor['name'] for actor in show['people']['actors'] if actor['name']]
-    if 'people' in show: info['castandrole']=['%s as %s' % (actor['name'],actor['character']) for actor in show['people']['actors'] if actor['name'] and actor['character']]
+    if 'network' in show: info['studio']=show['network']
+    info.update(make_people(show))
     return info
+    
+def make_people(item):
+    people={}
+    if 'people' in item: people['cast']=[actor['name'] for actor in item['people']['actors'] if actor['name']]
+    if 'people' in item: people['castandrole']=['%s as %s' % (actor['name'],actor['character']) for actor in item['people']['actors'] if actor['name'] and actor['character']]
+    if 'people' in item and 'directors' in item['people']: people['director']=', '.join([director['name'] for director in item['people']['directors']])
+    if 'people' in item and 'writers' in item['people']: people['writer']=', '.join([writer['name'] for writer in item['people']['writers']])
+    return people
     
 def get_section_params(section):
     section_params={}
