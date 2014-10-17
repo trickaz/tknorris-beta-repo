@@ -67,7 +67,7 @@ class Shush_Scraper(scraper.Scraper):
                 if proxy_link.startswith('http'):
                     xml_link = swf_link + 'pluginslist.xml'
                     html = self._http_get(xml_link, cache_limit=0)
-                    match = re.search('url="(.*?)b.swf', html)
+                    match = re.search('url="(.*?)n.swf', html)
                     if match:
                         player_url = match.group(1)
                         url = swf_link + player_url + 'plugins_player.php'

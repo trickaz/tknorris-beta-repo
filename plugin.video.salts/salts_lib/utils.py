@@ -130,7 +130,7 @@ def make_art(show, fanart=''):
         if 'banner' in show['images']: art_dict['banner']=show['images']['banner']
         if 'fanart' in show['images']: art_dict['fanart']=show['images']['fanart']
         if 'poster' in show['images']: art_dict['thumb']=art_dict['poster']=show['images']['poster']
-        if 'screen' in show['images']: art_dict['thumb']=art_dict['poster']=show['images']['screen']
+        if 'screen' in show['images']: art_dict['thumb']=show['images']['screen']
     return art_dict
 
 def make_info(item, show=''):

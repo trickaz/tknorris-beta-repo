@@ -30,6 +30,7 @@ def enum(**enums):
 DB_TYPES= enum(MYSQL='mysql', SQLITE='sqlite')
 CSV_MARKERS = enum(REL_URL='***REL_URL***', OTHER_LISTS='***OTHER_LISTS***', SAVED_SEARCHES='***SAVED_SEARCHES***', BOOKMARKS='***BOOKMARKS***')
 TRIG_DB_UPG = False
+MAX_TRIES=2
 
 _SALTS = Addon('plugin.video.salts')
 
@@ -357,14 +358,25 @@ class DB_Connection():
             
         rows=None
         sql=self.__format(sql)
-        cur = self.db.cursor()
-        #log_utils.log('Running: %s with %s' % (sql, params), xbmc.LOGDEBUG)
-        cur.execute(sql, params)
-        if sql[:6].upper() == 'SELECT' or sql[:4].upper() == 'SHOW':
-            rows=cur.fetchall()
-        cur.close()
-        self.db.commit()
-        return rows
+        tries=1
+        while True:
+            try:
+                cur = self.db.cursor()
+                #log_utils.log('Running: %s with %s' % (sql, params), xbmc.LOGDEBUG)
+                cur.execute(sql, params)
+                if sql[:6].upper() == 'SELECT' or sql[:4].upper() == 'SHOW':
+                    rows=cur.fetchall()
+                cur.close()
+                self.db.commit()
+                return rows
+            except db_lib.errors.OperationalError:
+                if tries<MAX_TRIES:
+                    tries += 1
+                    log_utils.log('Retrying (%s/%s) SQL: %s' % (tries, MAX_TRIES, sql), xbmc.LOGWARNING)
+                    self.db=None
+                    self.__connect_to_db()
+                else:
+                    raise
 
     def __get_db_version(self):
         version=None

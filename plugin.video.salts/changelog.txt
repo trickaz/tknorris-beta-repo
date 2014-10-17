@@ -1,3 +1,10 @@
+[B]Version 0.0.32[/B]
+- Sort Set Related Url by scraper sort order
+- Add retry on mysql error
+- another shush.se fix
+- Improved artwork on episode playback
+- Prevent service from exiting on single exceptions
+
 [B]Version 0.0.31[/B]
 - solarmovie scraper fixes
 - improve myvideolinks.eu and oneclickwatch.org quality function
